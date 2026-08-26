@@ -4,6 +4,9 @@ const db = require('./config/db');
 const requestLogger = require('./middleware/logger');
 const { notFoundHandler, errorHandler } = require('./middleware/errorHandler');
 
+// Import Auth Routes
+const authRoutes = require('./routes/authRoutes');
+
 const app = express();
 
 // Middleware dasar
@@ -16,7 +19,6 @@ app.use(requestLogger);
 // Endpoint Health Check Lanjutan (Memeriksa Backend & PostgreSQL)
 app.get('/health', async (req, res, next) => {
   try {
-    // Menguji koneksi database secara langsung saat endpoint diakses
     await db.query('SELECT 1');
     
     res.status(200).json({
@@ -29,12 +31,14 @@ app.get('/health', async (req, res, next) => {
       timestamp: new Date().toISOString()
     });
   } catch (error) {
-    // Jika database mati, lemparkan error ke global error handler
     error.statusCode = 503; // Service Unavailable
     error.message = 'Database connection failed during health check';
     next(error);
   }
 });
+
+// Mount Auth Routes (HARUS DI SINI, SEBELUM notFoundHandler)
+app.use('/api/auth', authRoutes);
 
 // 1. Tangkap URL yang tidak terdaftar (404)
 app.use(notFoundHandler);
