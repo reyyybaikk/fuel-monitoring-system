@@ -1,5 +1,6 @@
 const fuelTransactionRepository = require('../repositories/fuelTransactionRepository');
 const vehicleRepository = require('../repositories/vehicleRepository');
+const fuelAnalysisQueue = require('../config/queue');
 
 class FuelTransactionService {
   async createTransaction(data, userId) {
@@ -42,7 +43,36 @@ class FuelTransactionService {
     }
 
     const payload = { ...data, driver_id: userId, fuel_type: fuel_type };
-    return await fuelTransactionRepository.create(payload);
+    
+    // 1. Simpan data ke PostgreSQL secara permanen
+    const newTransaction = await fuelTransactionRepository.create(payload);
+
+    // 2. BACKGROUND JOB (PRODUCER)
+    // Masukkan ID transaksi ke dalam antrean Redis untuk dianalisis oleh Worker (di latar belakang)
+    try {
+      // Nama job: 'analyze-transaction', Data: { transactionId: 15 }
+      await fuelAnalysisQueue.add(
+        'analyze-transaction', 
+        { transactionId: newTransaction.id },
+        {
+          attempts: 3, // Jika gagal, ulangi maksimal 3 kali
+          backoff: {
+            type: 'exponential',
+            delay: 2000 // Jeda waktu bertambah tiap coba ulang (2 detik, 4 detik, dst)
+          },
+          removeOnComplete: true, // Hapus dari Redis jika sukses agar tidak menuh-menuhin memori
+          removeOnFail: false // Biarkan tertinggal di Redis jika gagal total agar bisa kita periksa manual
+        }
+      );
+      console.log(`[Queue] Job untuk transaksi ID ${newTransaction.id} berhasil ditambahkan ke antrean.`);
+    } catch (error) {
+      // PENTING: Jika Redis gagal, kita HANYA mencatat error.
+      // Jangan melakukan "throw error" di sini, agar aplikasi HP Driver tetap mendapatkan respons SUKSES dari PostgreSQL.
+      console.error(`[Queue Error] Gagal memasukkan transaksi ${newTransaction.id} ke antrean:`, error.message);
+    }
+
+    // 3. Kembalikan data sukses ke pengguna
+    return newTransaction;
   }
 
   async getTransactions(query, user) {

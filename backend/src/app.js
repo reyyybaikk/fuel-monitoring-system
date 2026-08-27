@@ -1,7 +1,10 @@
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
+
+// Single declarations for configuration & middleware
 const db = require('./config/db');
+const redisClient = require('./config/redis');
 const requestLogger = require('./middleware/logger');
 const { notFoundHandler, errorHandler } = require('./middleware/errorHandler');
 
@@ -13,33 +16,48 @@ const fuelTransactionRoutes = require('./routes/fuelTransactionRoutes');
 
 const app = express();
 
-// Middleware dasar
+// Global Middleware
 app.use(cors());
 app.use(express.json());
-
-// Pasang logger aktivitas request
 app.use(requestLogger);
+
+// Static Files
 app.use('/uploads', express.static(path.join(__dirname, '../../uploads')));
 
-// Endpoint Health Check Lanjutan (Memeriksa Backend & PostgreSQL)
-app.get('/health', async (req, res, next) => {
+// Unified Health Check Endpoint (PostgreSQL + Redis)
+app.get('/api/health', async (req, res) => {
+  const healthStatus = {
+    backend: 'UP',
+    database: 'UP',
+    redis: 'UP',
+    timestamp: new Date().toISOString()
+  };
+
+  // 1. Check PostgreSQL
   try {
     await db.query('SELECT 1');
-    
-    res.status(200).json({
-      success: true,
-      message: 'System is healthy',
-      services: {
-        backend: 'UP',
-        database: 'UP'
-      },
-      timestamp: new Date().toISOString()
-    });
   } catch (error) {
-    error.statusCode = 503; // Service Unavailable
-    error.message = 'Database connection failed during health check';
-    next(error);
+    console.error('[HealthCheck] DB Error:', error.message);
+    healthStatus.database = 'DOWN';
   }
+
+  // 2. Check Redis
+  try {
+    const pingResult = await redisClient.ping();
+    if (pingResult !== 'PONG') throw new Error('Redis did not return PONG');
+  } catch (error) {
+    console.error('[HealthCheck] Redis Error:', error.message);
+    healthStatus.redis = 'DOWN';
+  }
+
+  // Determine overall status
+  const isHealthy = healthStatus.database === 'UP' && healthStatus.redis === 'UP';
+  const statusCode = isHealthy ? 200 : 503;
+
+  res.status(statusCode).json({
+    success: isHealthy,
+    services: healthStatus
+  });
 });
 
 // API Routes
@@ -48,7 +66,7 @@ app.use('/api/vehicles', vehicleRoutes);
 app.use('/api/drivers', driverRoutes);
 app.use('/api/fuel-transactions', fuelTransactionRoutes);
 
-// Error Handling Middlewares (Must be at the bottom)
+// Error Handling Middleware (Must remain at the bottom)
 app.use(notFoundHandler);
 app.use(errorHandler);
 
