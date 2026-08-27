@@ -1,11 +1,15 @@
 const express = require('express');
 const cors = require('cors');
+const path = require('path');
 const db = require('./config/db');
 const requestLogger = require('./middleware/logger');
 const { notFoundHandler, errorHandler } = require('./middleware/errorHandler');
 
-// Import Auth Routes
+// Import Routes
 const authRoutes = require('./routes/authRoutes');
+const vehicleRoutes = require('./routes/vehicleRoutes');
+const driverRoutes = require('./routes/driverRoutes');
+const fuelTransactionRoutes = require('./routes/fuelTransactionRoutes');
 
 const app = express();
 
@@ -15,6 +19,7 @@ app.use(express.json());
 
 // Pasang logger aktivitas request
 app.use(requestLogger);
+app.use('/uploads', express.static(path.join(__dirname, '../../uploads')));
 
 // Endpoint Health Check Lanjutan (Memeriksa Backend & PostgreSQL)
 app.get('/health', async (req, res, next) => {
@@ -37,13 +42,14 @@ app.get('/health', async (req, res, next) => {
   }
 });
 
-// Mount Auth Routes (HARUS DI SINI, SEBELUM notFoundHandler)
+// API Routes
 app.use('/api/auth', authRoutes);
+app.use('/api/vehicles', vehicleRoutes);
+app.use('/api/drivers', driverRoutes);
+app.use('/api/fuel-transactions', fuelTransactionRoutes);
 
-// 1. Tangkap URL yang tidak terdaftar (404)
+// Error Handling Middlewares (Must be at the bottom)
 app.use(notFoundHandler);
-
-// 2. Tangkap semua error global
 app.use(errorHandler);
 
 module.exports = app;
