@@ -1,4 +1,4 @@
-const db = require('../config/database'); // Sesuaikan dengan path file pool/koneksi database Anda
+const db = require('../config/db'); // Sesuaikan dengan path file pool/koneksi database Anda
 const { uploadFile } = require('../services/uploadService');
 
 // 1. Membuat Transaksi Baru
