@@ -3,7 +3,8 @@ require('dotenv').config();
 
 // Membuat pool koneksi menggunakan variabel dari .env
 const pool = new Pool({
-  connectionString: process.env.DATABASE_URL
+  connectionString: process.env.DATABASE_URL,
+  ssl: { rejectUnauthorized: false }
 });
 
 // Mengecek apakah koneksi berhasil saat file ini dipanggil
