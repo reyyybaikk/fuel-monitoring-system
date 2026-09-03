@@ -1,7 +1,7 @@
 // src/config/redis.js
 const { createClient } = require('redis');   // npm i redis@4 (versi modern)
 
-const redisUrl = process.env.REDIS_URL;
+let redisUrl = process.env.REDIS_URL;
 if (!redisUrl) {
   console.error('[Redis] REDIS_URL environment variable is not set. Exiting.');
   process.exit(1);
