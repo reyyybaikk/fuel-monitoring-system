@@ -1,29 +1,31 @@
 // src/services/uploadService.js
 const { createClient } = require('@supabase/supabase-js');
-const fs = require('fs');
-const path = require('path');
 
+// Menggunakan SUPABASE_URL dan SUPABASE_ANON_KEY dari file .env
 const supabase = createClient(
   process.env.SUPABASE_URL,
-  process.env.SUPABASE_ANON_KEY   // untuk client‑side; gunakan SERVICE_ROLE_KEY di server‑only
+  process.env.SUPABASE_ANON_KEY
 );
 
 /**
  * Upload a local file buffer to Supabase Storage.
- * @param {Buffer} fileBuffer
- * @param {string} destPath  – contoh: `uploads/2023/09/receipt.png`
- * @returns {Promise<string>} public URL
+ * @param {Buffer} fileBuffer - Buffer dari file yang di-upload (misal dari Multer)
+ * @param {string} destPath - Path tujuan penyimpanan di bucket – contoh: `fuel/1689324_receipt.png`
+ * @returns {Promise<string>} - Public URL dari file yang berhasil di-upload
  */
 async function uploadFile(fileBuffer, destPath) {
   const { data, error } = await supabase.storage
-    .from('uploads')                 // bucket yang dibuat di Supabase UI
+    .from('uploads') // Pastikan bucket bernama 'uploads' sudah dibuat di dashboard Supabase
     .upload(destPath, fileBuffer, {
       upsert: true,
       contentType: 'application/octet-stream',
     });
 
-  if (error) throw error;
-  // Jika bucket bersifat public, URL langsung dapat di‑access
+  if (error) {
+    throw error;
+  }
+
+  // Mengembalikan URL publik file yang dapat diakses langsung
   return `${process.env.SUPABASE_URL}/storage/v1/object/public/uploads/${destPath}`;
 }
 

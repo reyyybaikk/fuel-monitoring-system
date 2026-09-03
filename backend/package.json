@@ -25,6 +25,7 @@
     "firebase-admin": "^14.3.0",
     "ioredis": "^6.0.0",
     "jsonwebtoken": "^9.0.3",
+    "multer": "^2.3.0",
     "pg": "^8.23.0",
     "pg-hstore": "^2.3.4",
     "qrcode": "^1.5.4",
