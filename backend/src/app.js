@@ -14,6 +14,7 @@ const vehicleRoutes = require('./routes/vehicleRoutes');
 const driverRoutes = require('./routes/driverRoutes');
 const fuelTransactionRoutes = require('./routes/fuelTransactionRoutes');
 
+
 const app = express();
 
 // Global Middleware

@@ -42,12 +42,7 @@ const runMigration = async () => {
     await db.query(createVehiclesQuery);
     console.log('Table "vehicles" is ready.');
 
-  // 3. Create fuel_transactions table (Core Business with Filling Source, GPS & Photos)
-    
-    // TAMBAHKAN BARIS INI UNTUK MENGHAPUS TABEL LAMA:
-    await db.query('DROP TABLE IF EXISTS fuel_transactions CASCADE;'); 
-    console.log('Old "fuel_transactions" table dropped.');
-
+    // 3. Create fuel_transactions table (Core Business with Filling Source, GPS & Photos in PostgreSQL BYTEA)
     const createFuelTransactionsQuery = `
       CREATE TABLE IF NOT EXISTS fuel_transactions (
         id SERIAL PRIMARY KEY,
@@ -60,8 +55,12 @@ const runMigration = async () => {
         total_cost NUMERIC(12, 2) NOT NULL,
         latitude NUMERIC(10, 8),
         longitude NUMERIC(11, 8),
-        odometer_photo_path TEXT,
-        receipt_photo_path TEXT,
+        odometer_photo_data BYTEA,
+        odometer_photo_mimetype VARCHAR(50),
+        receipt_photo_data BYTEA,
+        receipt_photo_mimetype VARCHAR(50),
+        odometer_after_photo_data BYTEA,
+        odometer_after_photo_mimetype VARCHAR(50),
         status VARCHAR(20) DEFAULT 'PENDING' CHECK (status IN ('PENDING', 'APPROVED', 'REJECTED')),
         notes TEXT,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -71,6 +70,28 @@ const runMigration = async () => {
   
     await db.query(createFuelTransactionsQuery);
     console.log('Table "fuel_transactions" is updated and ready.');
+
+    // 4. Add new BYTEA + OCR + ML + WhatsApp notification columns (safe, non-destructive)
+    const alterQueries = [
+      `ALTER TABLE fuel_transactions ADD COLUMN IF NOT EXISTS odometer_photo_data BYTEA;`,
+      `ALTER TABLE fuel_transactions ADD COLUMN IF NOT EXISTS odometer_photo_mimetype VARCHAR(50);`,
+      `ALTER TABLE fuel_transactions ADD COLUMN IF NOT EXISTS receipt_photo_data BYTEA;`,
+      `ALTER TABLE fuel_transactions ADD COLUMN IF NOT EXISTS receipt_photo_mimetype VARCHAR(50);`,
+      `ALTER TABLE fuel_transactions ADD COLUMN IF NOT EXISTS odometer_after_photo_data BYTEA;`,
+      `ALTER TABLE fuel_transactions ADD COLUMN IF NOT EXISTS odometer_after_photo_mimetype VARCHAR(50);`,
+      `ALTER TABLE fuel_transactions ADD COLUMN IF NOT EXISTS ocr_receipt_data JSONB;`,
+      `ALTER TABLE fuel_transactions ADD COLUMN IF NOT EXISTS ocr_odometer_before INTEGER;`,
+      `ALTER TABLE fuel_transactions ADD COLUMN IF NOT EXISTS ocr_odometer_after INTEGER;`,
+      `ALTER TABLE fuel_transactions ADD COLUMN IF NOT EXISTS ml_is_anomaly BOOLEAN DEFAULT FALSE;`,
+      `ALTER TABLE fuel_transactions ADD COLUMN IF NOT EXISTS ml_anomaly_score NUMERIC(4,2);`,
+      `ALTER TABLE fuel_transactions ADD COLUMN IF NOT EXISTS ml_anomaly_reasons TEXT;`,
+      `ALTER TABLE fuel_transactions ADD COLUMN IF NOT EXISTS wa_notif_sent BOOLEAN DEFAULT FALSE;`,
+    ];
+
+    for (const q of alterQueries) {
+      await db.query(q);
+    }
+    console.log('All BYTEA and ML columns synced to "fuel_transactions".');
 
     console.log('All migrations completed successfully.');
     process.exit(0);

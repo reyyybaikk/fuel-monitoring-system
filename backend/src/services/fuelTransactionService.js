@@ -47,9 +47,21 @@ class FuelTransactionService {
       throw error;
     }
 
+    // 5. Anti-Fraud: Cek apakah foto nota/struk sudah pernah digunakan sebelumnya (Duplicate Receipt Check)
+    if (data.receipt_photo && data.receipt_photo.buffer) {
+      const crypto = require('crypto');
+      const receiptHash = crypto.createHash('sha256').update(data.receipt_photo.buffer).digest('hex');
+      const duplicateReceipt = await fuelTransactionRepository.findByReceiptHash(receiptHash);
+      if (duplicateReceipt) {
+        const error = new Error(`Foto nota/struk ini sudah pernah diunggah pada Transaksi ID #${duplicateReceipt.id}. Dilarang menggunakan foto nota yang sama lebih dari 1 kali!`);
+        error.statusCode = 400;
+        throw error;
+      }
+    }
+
     const payload = { ...data, driver_id: userId, fuel_type };
     
-    // Save record to PostgreSQL database
+    // Save record with photo BYTEA buffers directly to PostgreSQL
     const newTransaction = await fuelTransactionRepository.create(payload);
 
     // Queue transaction ID for background ML analysis
@@ -88,6 +100,7 @@ class FuelTransactionService {
       driver_id: query.driver_id || null,
       status: query.status || null,
       fuel_type: query.fuel_type || null,
+      is_anomaly: query.is_anomaly !== undefined ? query.is_anomaly : (query.has_anomaly !== undefined ? query.has_anomaly : null),
       role: user.role,
       userId: user.id
     };
@@ -119,6 +132,32 @@ class FuelTransactionService {
       throw error;
     }
     return transaction;
+  }
+
+  async getTransactionPhoto(id, type, user) {
+    const photoRecord = await fuelTransactionRepository.getPhotoByIdAndType(id, type);
+    if (!photoRecord) {
+      const error = new Error('Transaksi BBM tidak ditemukan');
+      error.statusCode = 404;
+      throw error;
+    }
+
+    if (user.role === 'DRIVER' && photoRecord.driver_id !== user.id) {
+      const error = new Error('Forbidden: Anda tidak memiliki hak akses melihat foto transaksi ini');
+      error.statusCode = 403;
+      throw error;
+    }
+
+    if (!photoRecord.photo_data) {
+      const error = new Error(`Foto '${type}' tidak tersedia untuk transaksi ini`);
+      error.statusCode = 404;
+      throw error;
+    }
+
+    return {
+      data: photoRecord.photo_data,
+      mimetype: photoRecord.photo_mimetype || 'image/jpeg'
+    };
   }
 
   async updateTransactionStatus(id, status) {
