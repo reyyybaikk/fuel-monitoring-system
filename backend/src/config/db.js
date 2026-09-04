@@ -7,6 +7,13 @@ const pool = new Pool({
   ssl: { rejectUnauthorized: false }
 });
 
+// Tambahkan opsi tls: { rejectUnauthorized: false }
+const redisClient = new Redis(process.env.REDIS_URL, {
+  tls: {
+    rejectUnauthorized: false
+  }
+});
+
 // Mengecek apakah koneksi berhasil saat file ini dipanggil
 pool.on('connect', () => {
   console.log('Connected to the PostgreSQL database successfully.');
