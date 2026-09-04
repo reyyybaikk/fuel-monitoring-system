@@ -2,6 +2,7 @@ const db = require('../config/db');
 const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');
+const { uploadFile } = require('../services/uploadService');
 
 const uploadDir = path.join(__dirname, '../../uploads');
 if (!fs.existsSync(uploadDir)) {
@@ -24,44 +25,55 @@ class FuelTransactionRepository {
       odometer_photo, receipt_photo, odometer_after_photo
     } = data;
 
-    // 1. Hitung Hash SHA-256 Foto Struk
-    let receipt_photo_hash = null;
-    let receipt_photo_path = null;
-    let odometer_photo_path = null;
-    let odometer_after_photo_path = null;
-
     const timestamp = Date.now();
+
+    // 1. Upload ke Supabase & Simpan Lokal secara paralel untuk efisiensi
+    const uploadTasks = [];
+
+    let receipt_photo_url = null;
+    let odometer_photo_url = null;
+    let odometer_after_photo_url = null;
+    let receipt_photo_hash = null;
 
     if (receipt_photo && receipt_photo.buffer) {
       receipt_photo_hash = crypto.createHash('sha256').update(receipt_photo.buffer).digest('hex');
       const ext = path.extname(receipt_photo.originalname || '.jpg').toLowerCase() || '.jpg';
-      receipt_photo_path = `receipt_photo-${timestamp}-${Math.round(Math.random() * 1e8)}${ext}`;
-      fs.writeFileSync(path.join(uploadDir, receipt_photo_path), receipt_photo.buffer);
+      const fileName = `receipt-${timestamp}-${driver_id}${ext}`;
+      uploadTasks.push(
+        uploadFile(receipt_photo.buffer, `fuel/${fileName}`).then(url => receipt_photo_url = url)
+      );
     }
 
     if (odometer_photo && odometer_photo.buffer) {
       const ext = path.extname(odometer_photo.originalname || '.jpg').toLowerCase() || '.jpg';
-      odometer_photo_path = `odometer_photo-${timestamp}-${Math.round(Math.random() * 1e8)}${ext}`;
-      fs.writeFileSync(path.join(uploadDir, odometer_photo_path), odometer_photo.buffer);
+      const fileName = `odo-before-${timestamp}-${driver_id}${ext}`;
+      uploadTasks.push(
+        uploadFile(odometer_photo.buffer, `fuel/${fileName}`).then(url => odometer_photo_url = url)
+      );
     }
 
     if (odometer_after_photo && odometer_after_photo.buffer) {
       const ext = path.extname(odometer_after_photo.originalname || '.jpg').toLowerCase() || '.jpg';
-      odometer_after_photo_path = `odometer_after_photo-${timestamp}-${Math.round(Math.random() * 1e8)}${ext}`;
-      fs.writeFileSync(path.join(uploadDir, odometer_after_photo_path), odometer_after_photo.buffer);
+      const fileName = `odo-after-${timestamp}-${driver_id}${ext}`;
+      uploadTasks.push(
+        uploadFile(odometer_after_photo.buffer, `fuel/${fileName}`).then(url => odometer_after_photo_url = url)
+      );
     }
+
+    // Tunggu semua proses upload selesai
+    await Promise.all(uploadTasks);
 
     const query = `
       INSERT INTO fuel_transactions (
         vehicle_id, driver_id, filling_source, fuel_type, fuel_amount,
         odometer, total_cost, latitude, longitude, address, notes, status,
         odometer_photo_path, receipt_photo_path, odometer_after_photo_path,
-        receipt_photo_hash,
+        receipt_photo_hash, photo_url,
         odometer_photo_data, odometer_photo_mimetype,
         receipt_photo_data, receipt_photo_mimetype,
         odometer_after_photo_data, odometer_after_photo_mimetype
       )
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, 'PENDING', $12, $13, $14, $15, $16, $17, $18, $19, $20, $21)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, 'PENDING', $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22)
       RETURNING id, vehicle_id, driver_id, filling_source, fuel_type, fuel_amount, 
                 odometer, total_cost, latitude, longitude, address, status, notes, created_at, updated_at;
     `;
@@ -78,10 +90,11 @@ class FuelTransactionRepository {
       longitude || null,
       address || null,
       notes || null,
-      odometer_photo_path,
-      receipt_photo_path,
-      odometer_after_photo_path,
+      odometer_photo_url,        // Disimpan sebagai URL Supabase
+      receipt_photo_url,         // Disimpan sebagai URL Supabase
+      odometer_after_photo_url,  // Disimpan sebagai URL Supabase
       receipt_photo_hash,
+      receipt_photo_url,         // photo_url utama (nota)
       odometer_photo ? odometer_photo.buffer : null,
       odometer_photo ? odometer_photo.mimetype : null,
       receipt_photo ? receipt_photo.buffer : null,
