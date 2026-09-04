@@ -5,7 +5,7 @@ const { uploadFile } = require('../services/uploadService');
 exports.create = async (req, res) => {
   try {
     // ==== Extract request payload ==== //
-    const { odometer, fuel_amount, total_cost, notes } = req.body;
+    const { odometer, fuel_amount, total_cost, notes, vehicle_id, filling_source, fuel_type } = req.body;
 
     // Resolve driver ID (numeric) and safe UID (uuid or null)
     let driverId = null;
@@ -59,18 +59,41 @@ exports.create = async (req, res) => {
       INSERT INTO fuel_transactions (
         driver_id,
         user_uid,
+        vehicle_id,
+        filling_source,
+        fuel_type,
         odometer,
         fuel_amount,
         total_cost,
         notes,
         photo_url,
         status
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, 'PENDING')
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, 'PENDING')
       RETURNING *;
     `;
+    // ==== Validasi filling_source dan fuel_type ==== //
+    const allowedSources = ['SPBU', 'ECERAN'];
+    const allowedFuelTypes = ['Pertalite', 'Pertamax', 'Biosolar', 'Dexlite', 'Pertamina Dex'];
+    if (!filling_source || !allowedSources.includes(filling_source)) {
+      return res.status(400).json({ success: false, error: 'filling_source harus salah satu: SPBU atau ECERAN' });
+    }
+    if (!fuel_type || !allowedFuelTypes.includes(fuel_type)) {
+      return res.status(400).json({ success: false, error: 'fuel_type tidak valid. Pilihan: Pertalite, Pertamax, Biosolar, Dexlite, Pertamina Dex' });
+    }
+
+    // Validate vehicle_id from request payload
+    const vehicleIdInt = parseInt(vehicle_id, 10);
+    if (isNaN(vehicleIdInt)) {
+      return res.status(400).json({ success: false, error: 'vehicle_id must be a valid integer' });
+    }
+
+    // Updated values array to include vehicle_id, filling_source, fuel_type
     const values = [
       driverId,
       uidValue, // UUID Supabase (or null) – stored in user_uid column
+      vehicleIdInt,
+      filling_source,
+      fuel_type,
       odometer,
       fuel_amount,
       total_cost,
