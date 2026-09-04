@@ -60,10 +60,6 @@ class FuelTransactionController {
         data: newTransaction,
       });
     } catch (error) {
-      next(error);
-    }
-  }
-    } catch (error) {
       // Pass to centralized error handler
       next(error);
     }
