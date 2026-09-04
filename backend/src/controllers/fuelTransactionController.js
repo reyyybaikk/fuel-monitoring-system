@@ -31,7 +31,7 @@ class FuelTransactionController {
   }
 
   // 1. Create a new fuel transaction
-  async create(req, res, next) {
+  create = async (req, res, next) => {
     try {
       // Resolve driver / user UID
       const { driverId, userUid } = await this._resolveUser(req);
@@ -63,30 +63,30 @@ class FuelTransactionController {
       // Pass to centralized error handler
       next(error);
     }
-  }
+  };
 
   // 2. Get all transactions (paginated / filtered via service layer)
-  async getAll(req, res, next) {
+  getAll = async (req, res, next) => {
     try {
       const result = await fuelTransactionService.getTransactions(req.query, req.user);
       res.status(200).json({ success: true, data: result.data, pagination: result.pagination });
     } catch (error) {
       next(error);
     }
-  }
+  };
 
   // 3. Get a transaction by ID
-  async getById(req, res, next) {
+  getById = async (req, res, next) => {
     try {
       const transaction = await fuelTransactionService.getTransactionById(req.params.id, req.user);
       res.status(200).json({ success: true, data: transaction });
     } catch (error) {
       next(error);
     }
-  }
+  };
 
   // 4. Stream a transaction photo (odometer, receipt, etc.)
-  async getPhoto(req, res, next) {
+  getPhoto = async (req, res, next) => {
     try {
       const { id, type } = req.params;
       const photo = await fuelTransactionService.getTransactionPhoto(id, type, req.user);
@@ -96,10 +96,10 @@ class FuelTransactionController {
     } catch (error) {
       next(error);
     }
-  }
+  };
 
   // 5. Update transaction status (admin/manager action)
-  async updateStatus(req, res, next) {
+  updateStatus = async (req, res, next) => {
     try {
       const { id } = req.params;
       const { status } = req.body;
@@ -112,7 +112,7 @@ class FuelTransactionController {
     } catch (error) {
       next(error);
     }
-  }
+  };
 }
 
 module.exports = new FuelTransactionController();
