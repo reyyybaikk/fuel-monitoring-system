@@ -33,40 +33,7 @@ class FuelTransactionController {
   // 1. Create a new fuel transaction
   async create(req, res, next) {
     try {
-      const {
-        odometer,
-        fuel_amount,
-        total_cost,
-        notes,
-        vehicle_id,
-        filling_source,
-        fuel_type,
-        latitude,
-        longitude,
-        address,
-      } = req.body;
-
-      // ---------- Validation ----------
-      const vehicleIdInt = parseInt(vehicle_id, 10);
-      if (isNaN(vehicleIdInt)) {
-        return res.status(400).json({ success: false, error: 'vehicle_id must be a valid integer' });
-      }
-      if (latitude !== undefined && latitude !== null && isNaN(parseFloat(latitude))) {
-        return res.status(400).json({ success: false, error: 'latitude must be a number' });
-      }
-      if (longitude !== undefined && longitude !== null && isNaN(parseFloat(longitude))) {
-        return res.status(400).json({ success: false, error: 'longitude must be a number' });
-      }
-      const allowedSources = ['SPBU', 'ECERAN'];
-      const allowedFuelTypes = ['Pertalite', 'Pertamax', 'Biosolar', 'Dexlite', 'Pertamina Dex'];
-      if (!filling_source || !allowedSources.includes(filling_source)) {
-        return res.status(400).json({ success: false, error: 'filling_source must be SPBU or ECERAN' });
-      }
-      if (!fuel_type || !allowedFuelTypes.includes(fuel_type)) {
-        return res.status(400).json({ success: false, error: 'fuel_type is invalid. Choose from Pertalite, Pertamax, Biosolar, Dexlite, Pertamina Dex' });
-      }
-
-      // ---------- Resolve driver / user UID ----------
+      // Resolve driver / user UID
       const { driverId, userUid } = await this._resolveUser(req);
       if (!driverId) {
         const err = new Error('Unable to determine driver_id for this transaction');
@@ -74,76 +41,28 @@ class FuelTransactionController {
         throw err;
       }
 
-      // ---------- Handle optional file uploads ----------
-      let receiptPath = null;
-      let odometerBeforePath = null;
-      let odometerAfterPath = null;
+      // Prepare data for service
+      const transactionData = {
+        ...req.body,
+        user_uid: userUid,
+        // Extract files from req.files (result of upload.fields in middleware)
+        odometer_photo: req.files?.['odometer_photo']?.[0],
+        receipt_photo: req.files?.['receipt_photo']?.[0],
+        odometer_after_photo: req.files?.['odometer_after_photo']?.[0]
+      };
 
-      if (req.files && Array.isArray(req.files) && req.files.length > 0) {
-        // Expect: 0 - receipt (mandatory), 1 - odometer before, 2 - odometer after
-        const [receipt, odometerBefore, odometerAfter] = req.files;
-        if (receipt) {
-          receiptPath = await uploadFile(receipt.buffer, `fuel/${Date.now()}_receipt_${receipt.originalname}`);
-        }
-        if (odometerBefore) {
-          odometerBeforePath = await uploadFile(odometerBefore.buffer, `fuel/${Date.now()}_odo_before_${odometerBefore.originalname}`);
-        }
-        if (odometerAfter) {
-          odometerAfterPath = await uploadFile(odometerAfter.buffer, `fuel/${Date.now()}_odo_after_${odometerAfter.originalname}`);
-        }
-      }
-
-      // ---------- Insert transaction into DB ----------
-      const insertQuery = `
-        INSERT INTO fuel_transactions (
-          driver_id,
-          user_uid,
-          vehicle_id,
-          filling_source,
-          fuel_type,
-          odometer,
-          latitude,
-          longitude,
-          fuel_amount,
-          total_cost,
-          notes,
-          receipt_photo_path,
-          odometer_photo_path,
-          odometer_after_photo_path,
-          address,
-          status
-        ) VALUES (
-          $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,'PENDING'
-        ) RETURNING *;
-      `;
-      const values = [
-        driverId,
-        userUid || null,
-        vehicleIdInt,
-        filling_source,
-        fuel_type,
-        odometer,
-        latitude ? parseFloat(latitude) : null,
-        longitude ? parseFloat(longitude) : null,
-        fuel_amount,
-        total_cost,
-        notes,
-        receiptPath,
-        odometerBeforePath,
-        odometerAfterPath,
-        address || null,
-      ];
-
-      const newTransaction = (await db.query(insertQuery, values)).rows[0];
-
-      // ---------- Queue ML analysis job ----------
-      await fuelAnalysisQueue.add('analyse', { transactionId: newTransaction.id });
+      // Use service layer to handle business logic, validation, and persistence
+      const newTransaction = await fuelTransactionService.createTransaction(transactionData, driverId);
 
       return res.status(201).json({
         success: true,
         message: 'Fuel transaction created successfully',
         data: newTransaction,
       });
+    } catch (error) {
+      next(error);
+    }
+  }
     } catch (error) {
       // Pass to centralized error handler
       next(error);

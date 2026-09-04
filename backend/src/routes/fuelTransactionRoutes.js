@@ -12,20 +12,8 @@ router.use(authenticate);
 router.post(
   '/',
   authorize('DRIVER'),
-  uploadTransactionPhotos, // Middleware multer untuk menangkap file
-  async (req, res, next) => {
-    try {
-      // Upload file to Supabase if present
-      if (req.file) {
-        const publicUrl = await uploadFile(req.file.buffer, `fuel/${Date.now()}_${req.file.originalname}`);
-        // Attach URL to request body so controller can store it
-        req.body.photoUrl = publicUrl;
-      }
-      await fuelTransactionController.create(req, res);
-    } catch (err) {
-      next(err);
-    }
-  }
+  uploadTransactionPhotos, // Middleware multer untuk menangkap 3 file
+  fuelTransactionController.create
 );
 
 // SEMUA ROLE: Melihat daftar transaksi & detail transaksi
