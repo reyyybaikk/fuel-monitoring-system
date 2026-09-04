@@ -2,20 +2,16 @@ const { Pool } = require('pg');
 require('dotenv').config();
 
 // Membuat pool koneksi menggunakan variabel dari .env
-let connectionString = process.env.DATABASE_URL || '';
-if (!connectionString.includes('sslmode=')) {
-  const delimiter = connectionString.includes('?') ? '&' : '?';
-  connectionString = `${connectionString}${delimiter}sslmode=require`;
-}
+const { URL } = require('url');
+const dbUrl = new URL(process.env.DATABASE_URL);
 const pool = new Pool({
-  connectionString,
-  ssl: {
-    rejectUnauthorized: false,
-  },
-});
-
-// Tambahkan opsi tls: { rejectUnauthorized: false }
-// Redis client is now handled in src/config/redis.js
+  host: dbUrl.hostname,
+  port: dbUrl.port,
+  user: dbUrl.username,
+  password: dbUrl.password,
+  database: dbUrl.pathname.replace(/^\//, ''),
+  ssl: { rejectUnauthorized: false },
+});// Redis client is now handled in src/config/redis.js
 
 // Mengecek apakah koneksi berhasil saat file ini dipanggil
 pool.on('connect', () => {
