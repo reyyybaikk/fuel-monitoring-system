@@ -4,50 +4,78 @@ const { uploadFile } = require('../services/uploadService');
 // 1. Membuat Transaksi Baru
 exports.create = async (req, res) => {
   try {
-    // Ambil data teks dari body request
-    const { odometer, volume, total_cost, notes } = req.body;
-    const driverId = req.user.id; // Didapat dari middleware authenticate (JWT)
+    // ==== Extract request payload ==== //
+    const { odometer, fuel_amount, total_cost, notes } = req.body;
 
-    // Cek apakah ada file yang diunggah (mendukung req.file tunggal atau req.files jamak dari multer)
-    const file = req.file; 
-    const files = req.files; 
-    
-    let publicUrl = null;
-
-    if (file) {
-      // Jika menggunakan single upload
-      publicUrl = await uploadFile(file.buffer, `fuel/${Date.now()}_${file.originalname}`);
-    } else if (files) {
-      // Jika menggunakan multiple upload (misal: odometer, receipt, dll)
-      // Anda bisa memprosesnya di sini sesuai kebutuhan struktur penyimpanan Anda
+    // ==== Resolve driver ID (integer) ==== //
+    let driverId = null;
+    // Middleware may already set a numeric driver id (fallback case)
+    if (typeof req.user.id === 'number') {
+      driverId = req.user.id;
+    } else if (req.user.email) {
+      // JWT Supabase provides UID (string) – map to integer driver via email lookup
+      const result = await db.query('SELECT id FROM users WHERE email = $1 LIMIT 1', [req.user.email]);
+      if (result.rows.length > 0) {
+        driverId = result.rows[0].id;
+      }
+    }
+    if (!driverId) {
+      const err = new Error('Tidak dapat menentukan driver_id untuk transaksi ini');
+      err.statusCode = 400;
+      throw err;
     }
 
-    // Contoh Query Simpan ke PostgreSQL
-    /*
-    const queryText = `
-      INSERT INTO fuel_transactions (driver_id, odometer, volume, total_cost, notes, photo_url, status)
-      VALUES ($1, $2, $3, $4, $5, $6, 'PENDING')
+    // ==== Optional file upload (photo) ==== //
+    const file = req.file;
+    const files = req.files;
+    let photoUrl = null;
+    if (file) {
+      photoUrl = await uploadFile(file.buffer, `fuel/${Date.now()}_${file.originalname}`);
+    } else if (files && files.length > 0) {
+      // contoh: gunakan file pertama
+      const first = files[0];
+      photoUrl = await uploadFile(first.buffer, `fuel/${Date.now()}_${first.originalname}`);
+    }
+
+    // ==== Insert transaction ke PostgreSQL, menyertakan user_uid ==== //
+    const insertQuery = `
+      INSERT INTO fuel_transactions (
+        driver_id,
+        user_uid,
+        odometer,
+        fuel_amount,
+        total_cost,
+        notes,
+        photo_url,
+        status
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, 'PENDING')
       RETURNING *;
     `;
-    const values = [driverId, odometer, volume, total_cost, notes, publicUrl];
-    const newTransaction = await db.query(queryText, values);
-    */
+    const values = [
+      driverId,
+      req.user.id, // UID Supabase (string) – akan disimpan di kolom user_uid
+      odometer,
+      fuel_amount,
+      total_cost,
+      notes,
+      photoUrl
+    ];
+    const { rows } = await db.query(insertQuery, values);
+    const newTransaction = rows[0];
+
+    // ==== Queue job untuk ML analysis ==== //
+    const fuelAnalysisQueue = require('../config/queue');
+    await fuelAnalysisQueue.add('analyse', { transactionId: newTransaction.id });
 
     return res.status(201).json({
       success: true,
       message: 'Fuel transaction created successfully',
-      data: {
-        // transaction: newTransaction.rows[0],
-        publicUrl
-      }
+      data: { transaction: newTransaction }
     });
-
   } catch (error) {
     console.error('Error creating fuel transaction:', error);
-    return res.status(500).json({
-      success: false,
-      error: error.message
-    });
+    const status = error.statusCode || 500;
+    return res.status(status).json({ success: false, error: error.message });
   }
 };
 
