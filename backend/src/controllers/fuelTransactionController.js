@@ -7,23 +7,40 @@ exports.create = async (req, res) => {
     // ==== Extract request payload ==== //
     const { odometer, fuel_amount, total_cost, notes } = req.body;
 
-    // ==== Resolve driver ID (integer) ==== //
+    // Resolve driver ID (numeric) and safe UID (uuid or null)
     let driverId = null;
-    // Middleware may already set a numeric driver id (fallback case)
+    let userUid = null;
+    // Middleware may set req.user.id as numeric driver ID (fallback) or Supabase UID (string)
     if (typeof req.user.id === 'number') {
       driverId = req.user.id;
-    } else if (req.user.email) {
-      // JWT Supabase provides UID (string) – map to integer driver via email lookup
+    } else if (typeof req.user.id === 'string') {
+      // If the string matches UUID pattern, treat it as UID; otherwise try to map via email
+      const uuidRegex = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
+      if (uuidRegex.test(req.user.id)) {
+        userUid = req.user.id; // Supabase UID
+      } else if (req.user.email) {
+        // Attempt to resolve driver integer ID via email lookup
+        const result = await db.query('SELECT id FROM users WHERE email = $1 LIMIT 1', [req.user.email]);
+        if (result.rows.length > 0) {
+          driverId = result.rows[0].id;
+        }
+      }
+    }
+    // Fallback: if driverId still null, try to resolve from email directly
+    if (!driverId && req.user.email) {
       const result = await db.query('SELECT id FROM users WHERE email = $1 LIMIT 1', [req.user.email]);
       if (result.rows.length > 0) {
         driverId = result.rows[0].id;
       }
     }
+    // Ensure driverId is present; otherwise throw error
     if (!driverId) {
       const err = new Error('Tidak dapat menentukan driver_id untuk transaksi ini');
       err.statusCode = 400;
       throw err;
     }
+    // Ensure userUid is either a UUID string or null (acceptable for RLS column)
+    const uidValue = userUid || null;
 
     // ==== Optional file upload (photo) ==== //
     const file = req.file;
@@ -53,7 +70,7 @@ exports.create = async (req, res) => {
     `;
     const values = [
       driverId,
-      req.user.id, // UID Supabase (string) – akan disimpan di kolom user_uid
+      uidValue, // UUID Supabase (or null) – stored in user_uid column
       odometer,
       fuel_amount,
       total_cost,
