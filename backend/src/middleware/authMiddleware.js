@@ -30,6 +30,22 @@ const authenticate = async (req, res, next) => {
       return next();
     }
 
+      // 2. Jika bukan JWT lokal, coba verifikasi sebagai JWT Supabase
+      try {
+        const jwt = require('jsonwebtoken');
+        const publicKey = require('../config/jwtPublicKey.json');
+        const supabasePayload = jwt.verify(token, publicKey, { algorithms: ['ES256'] });
+        // Supabase token biasanya memiliki claim `sub` (user id) dan `role`
+        req.user = {
+          id: supabasePayload.sub,
+          email: supabasePayload.email,
+          role: supabasePayload.role || 'user',
+        };
+        return next();
+      } catch (supabaseErr) {
+        // ignore and continue to Firebase fallback
+      }
+
     // 2. Jika bukan JWT lokal, coba verifikasi sebagai Firebase ID Token (Mobile App)
     if (isFirebaseInitialized()) {
       const firebaseDecoded = await verifyFirebaseToken(token);
