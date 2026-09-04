@@ -2,9 +2,16 @@ const { Pool } = require('pg');
 require('dotenv').config();
 
 // Membuat pool koneksi menggunakan variabel dari .env
+let connectionString = process.env.DATABASE_URL || '';
+if (!connectionString.includes('sslmode=')) {
+  const delimiter = connectionString.includes('?') ? '&' : '?';
+  connectionString = `${connectionString}${delimiter}sslmode=require`;
+}
 const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-  ssl: { rejectUnauthorized: false }
+  connectionString,
+  ssl: {
+    rejectUnauthorized: false,
+  },
 });
 
 // Tambahkan opsi tls: { rejectUnauthorized: false }
