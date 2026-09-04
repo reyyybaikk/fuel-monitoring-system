@@ -10,7 +10,15 @@ const notFoundHandler = (req, res, next) => {
 const errorHandler = (err, req, res, next) => {
   console.error('Global Error Caught:', err.stack);
 
-  const statusCode = err.statusCode || 500;
+  let statusCode = 500;
+  if (err.statusCode) {
+    statusCode = parseInt(err.statusCode, 10);
+  } else if (err.status) {
+    statusCode = parseInt(err.status, 10);
+  }
+
+  // Jika parsing gagal, fallback ke 500
+  if (isNaN(statusCode)) statusCode = 500;
   
   res.status(statusCode).json({
     success: false,
