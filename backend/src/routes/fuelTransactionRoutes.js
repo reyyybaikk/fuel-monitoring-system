@@ -16,8 +16,10 @@ router.post(
   fuelTransactionController.create
 );
 
-// SEMUA ROLE: Melihat daftar transaksi & detail transaksi
-router.get('/', fuelTransactionController.getAll);
+// SEMUA ROLE: Melihat riwayat transaksi (PASTIKAN DI ATAS /:id)
+router.get('/history', fuelTransactionController.getAll);
+
+// SEMUA ROLE: Melihat detail transaksi
 router.get('/:id', fuelTransactionController.getById);
 
 // STREAM FOTO DARI DATABASE: Mendapatkan binary foto
