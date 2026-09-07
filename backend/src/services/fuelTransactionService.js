@@ -79,7 +79,8 @@ class FuelTransactionService {
       );
 
       // Option B: Direct Redis LPUSH for Python Worker
-      await redisClient.lPush('fuel_queue', JSON.stringify({ transactionId: newTransaction.id }));
+      const queueLength = await redisClient.lPush('fuel_queue', JSON.stringify({ transactionId: newTransaction.id }));
+      console.log(`[Queue] Job ID ${newTransaction.id} masuk ke 'fuel_queue'. Total antrean: ${queueLength}`);
 
       console.log(`[Queue] Job untuk transaksi ID ${newTransaction.id} berhasil ditambahkan ke antrean.`);
     } catch (error) {
