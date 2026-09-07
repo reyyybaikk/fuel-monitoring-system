@@ -4,9 +4,10 @@ import re
 import pytesseract
 from PIL import Image, ImageFilter, ImageEnhance
 
-# Konfigurasi path Tesseract (sesuaikan jika instalasi berbeda)
-pytesseract.pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tesseract.exe'
-# Linux/WSL: biasanya sudah di PATH, tidak perlu konfigurasi tambahan
+# Konfigurasi path Tesseract (Otomatis mendeteksi OS)
+if os.name == 'nt':  # Windows
+    pytesseract.pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tesseract.exe'
+# Di Linux (Render/Docker), Tesseract biasanya ada di /usr/bin/tesseract yang sudah masuk PATH
 
 
 def _preprocess_image(image_input) -> Image.Image:
