@@ -85,7 +85,9 @@ const runMigration = async () => {
       `ALTER TABLE fuel_transactions ADD COLUMN IF NOT EXISTS ml_is_anomaly BOOLEAN DEFAULT FALSE;`,
       `ALTER TABLE fuel_transactions ADD COLUMN IF NOT EXISTS ml_anomaly_score NUMERIC(4,2);`,
       `ALTER TABLE fuel_transactions ADD COLUMN IF NOT EXISTS ml_anomaly_reasons TEXT;`,
-      `ALTER TABLE fuel_transactions ADD COLUMN IF NOT EXISTS wa_notif_sent BOOLEAN DEFAULT FALSE;`,
+      `ALTER TABLE fuel_transactions ADD COLUMN IF NOT EXISTS user_uid UUID;`,
+      `ALTER TABLE fuel_transactions ADD COLUMN IF NOT EXISTS photo_url TEXT;`,
+      `ALTER TABLE fuel_transactions ADD COLUMN IF NOT EXISTS address TEXT;`
     ];
 
     for (const q of alterQueries) {
