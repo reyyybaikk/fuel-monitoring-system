@@ -11,21 +11,41 @@ REDIS_PASSWORD = os.getenv("REDIS_PASSWORD", None)
 
 def get_redis_client():
     """
-    Membuat satu instance koneksi Redis yang dapat di-reuse (Connection Reuse)
-    tanpa socket_timeout yang mengganggu fungsi blocking (brpop).
+    Membuat satu instance koneksi Redis yang dapat di-reuse.
+    Mendukung koneksi via REDIS_URL (Railway/Render) atau host/port individual.
     """
     try:
-        client = redis.Redis(
-            host=REDIS_HOST,
-            port=REDIS_PORT,
-            password=REDIS_PASSWORD if REDIS_PASSWORD else None,
-            decode_responses=True,  # Agar hasil pembacaan berupa string, bukan bytes
-            retry_on_timeout=True
-        )
-        
+        redis_url = os.getenv("REDIS_URL")
+
+        if redis_url:
+            # Pastikan URL memiliki skema redis:// agar tidak ValueError
+            if not redis_url.startswith(("redis://", "rediss://", "unix://")):
+                print(f"[Python Redis] WARNING: REDIS_URL tidak memiliki skema. Menambahkan awalan 'redis://'")
+                redis_url = f"redis://{redis_url}"
+
+            print(f"[Python Redis] Menghubungkan menggunakan REDIS_URL...")
+            client = redis.from_url(
+                redis_url,
+                decode_responses=True,
+                retry_on_timeout=True,
+                health_check_interval=30,  # Ping tiap 30 detik agar koneksi tetap hidup
+                socket_connect_timeout=10,
+                socket_keepalive=True      # Menjaga TCP socket tidak idle
+            )
+        else:
+            print(f"[Python Redis] WARNING: REDIS_URL tidak ditemukan. Menggunakan fallback {REDIS_HOST}:{REDIS_PORT}")
+            client = redis.Redis(
+                host=REDIS_HOST,
+                port=REDIS_PORT,
+                password=REDIS_PASSWORD if REDIS_PASSWORD else None,
+                decode_responses=True,
+                retry_on_timeout=True,
+                health_check_interval=30,
+                socket_keepalive=True
+            )
+
         # Lakukan tes koneksi awal (PING)
         client.ping()
-        print(f"[Python Redis] Berhasil terhubung ke server Redis di {REDIS_HOST}:{REDIS_PORT}")
         return client
         
     except Exception as e:
