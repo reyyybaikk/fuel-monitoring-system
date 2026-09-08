@@ -69,7 +69,8 @@ def run_inference_for_transaction(transaction_id: int) -> dict:
                 v.fuel_tank_capacity,
                 v.fuel_consumption_rate,
                 v.license_plate,
-                u.full_name AS driver_name
+                u.full_name AS driver_name,
+                u.whatsapp_number AS driver_whatsapp
             FROM fuel_transactions ft
             JOIN vehicles v ON ft.vehicle_id = v.id
             JOIN users u ON ft.driver_id = u.id
@@ -138,4 +139,4 @@ def run_inference_for_transaction(transaction_id: int) -> dict:
         if cursor:
             cursor.close()
         if connection:
-            connection.close()
+            connection.close()

@@ -17,28 +17,34 @@ class UserRepository {
 
   // Mencari user berdasarkan ID
   async findById(id) {
-    const query = 'SELECT id, username, email, full_name, role, is_active, created_at FROM users WHERE id = $1';
+    const query = 'SELECT id, username, email, full_name, whatsapp_number, role, is_active, created_at FROM users WHERE id = $1';
     const result = await db.query(query, [id]);
     return result.rows[0];
   }
 
   // Membuat / mendaftarkan user baru ke database
   async createUser(userData) {
-    const { username, email, password_hash, full_name, role } = userData;
+    const { username, email, password_hash, full_name, whatsapp_number, role } = userData;
     const query = `
-      INSERT INTO users (username, email, password_hash, full_name, role)
-      VALUES ($1, $2, $3, $4, $5)
-      RETURNING id, username, email, full_name, role, is_active, created_at;
+      INSERT INTO users (username, email, password_hash, full_name, whatsapp_number, role)
+      VALUES ($1, $2, $3, $4, $5, $6)
+      RETURNING id, username, email, full_name, whatsapp_number, role, is_active, created_at;
     `;
-    const values = [username, email, password_hash, full_name, role];
+    const values = [username, email, password_hash, full_name, whatsapp_number, role];
     const result = await db.query(query, values);
     return result.rows[0]; // Mengembalikan data user yang baru saja dibuat (tanpa password_hash)
   }
 
   // Sinkronisasi / pencarian otomatis user Firebase ke PostgreSQL
-  async findOrCreateFirebaseUser({ email, fullName }) {
+  async findOrCreateFirebaseUser({ email, fullName, whatsappNumber }) {
     let user = await this.findByEmail(email);
     if (user) {
+      // Jika user sudah ada tapi whatsapp_number belum terisi, update
+      if (!user.whatsapp_number && whatsappNumber) {
+        const updateQuery = 'UPDATE users SET whatsapp_number = $1 WHERE id = $2 RETURNING *';
+        const updateResult = await db.query(updateQuery, [whatsappNumber, user.id]);
+        return updateResult.rows[0];
+      }
       return user;
     }
 
@@ -55,6 +61,7 @@ class UserRepository {
       email,
       password_hash: 'FIREBASE_AUTH_PROVIDER',
       full_name: fullName || username,
+      whatsapp_number: whatsappNumber,
       role: 'DRIVER'
     });
 
