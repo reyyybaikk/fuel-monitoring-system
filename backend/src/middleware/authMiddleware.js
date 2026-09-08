@@ -50,10 +50,15 @@ const authenticate = async (req, res, next) => {
     if (isFirebaseInitialized()) {
       const firebaseDecoded = await verifyFirebaseToken(token);
       if (firebaseDecoded && firebaseDecoded.email) {
+        // Ambil data profil tambahan dari query string (dikirim saat sync pertama kali)
+        const fullName = req.query.full_name || firebaseDecoded.name || firebaseDecoded.email.split('@')[0];
+        const whatsappNumber = req.query.whatsapp_number || null;
+
         // Cari atau buat record user otomatis di PostgreSQL
         const dbUser = await userRepository.findOrCreateFirebaseUser({
           email: firebaseDecoded.email,
-          fullName: firebaseDecoded.name || firebaseDecoded.email.split('@')[0]
+          fullName: fullName,
+          whatsappNumber: whatsappNumber
         });
 
         if (!dbUser.is_active) {
@@ -67,6 +72,8 @@ const authenticate = async (req, res, next) => {
           email: dbUser.email,
           role: dbUser.role,
           username: dbUser.username,
+          full_name: dbUser.full_name,
+          whatsapp_number: dbUser.whatsapp_number,
           firebaseUid: firebaseDecoded.uid
         };
         return next();

@@ -5,11 +5,11 @@ const { generateToken } = require('../utils/jwt');
 // Controller untuk Registrasi User
 const register = async (req, res, next) => {
   try {
-    const { username, email, password, full_name, role } = req.body;
+    const { username, email, password, full_name, whatsapp_number, role } = req.body;
     let error;
 
-    if (!username || !email || !password || !full_name || !role) {
-      error = new Error('Semua field (username, email, password, full_name, role) wajib diisi');
+    if (!username || !email || !password || !full_name || !whatsapp_number || !role) {
+      error = new Error('Semua field (username, email, password, full_name, whatsapp_number, role) wajib diisi');
       error.statusCode = 400;
       throw error;
     }
@@ -49,6 +49,7 @@ const register = async (req, res, next) => {
       email,
       password_hash,
       full_name,
+      whatsapp_number,
       role
     });
 
@@ -152,6 +153,13 @@ const getMe = async (req, res, next) => {
 // Controller untuk Sinkronisasi / Registrasi Langsung dari Firebase Mobile App
 const firebaseSync = async (req, res, next) => {
   try {
+    // Pastikan user tidak menggunakan fallback (default driver)
+    if (req.user.isFallback) {
+      const error = new Error('Sinkronisasi gagal: Token Firebase tidak valid atau belum terverifikasi.');
+      error.statusCode = 401;
+      throw error;
+    }
+
     // req.user sudah diisi oleh authenticate middleware dari Firebase ID Token
     // Kita perlu generate JWT Lokal kita agar mobile app bisa menyimpan token sesi resmi
     const token = generateToken(req.user);
@@ -164,6 +172,8 @@ const firebaseSync = async (req, res, next) => {
         id: req.user.id,
         email: req.user.email,
         username: req.user.username,
+        full_name: req.user.full_name,
+        whatsapp_number: req.user.whatsapp_number,
         role: req.user.role
       }
     });
