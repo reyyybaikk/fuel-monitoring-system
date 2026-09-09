@@ -1,6 +1,64 @@
 const userRepository = require('../repositories/userRepository');
 const { hashPassword, comparePassword } = require('../utils/hash');
 const { generateToken } = require('../utils/jwt');
+const db = require('../config/db');
+const axios = require('axios'); // Pastikan sudah install axios: npm install axios
+
+// Fungsi untuk Mengirim OTP via Fonnte
+const requestOtp = async (req, res, next) => {
+  try {
+    const { whatsapp_number } = req.body;
+    if (!whatsapp_number) throw new Error('Nomor WhatsApp wajib diisi');
+
+    const otp = Math.floor(100000 + Math.random() * 900000).toString(); // 6 Digit
+    const expiresAt = new Date(Date.now() + 5 * 60000); // Expire dalam 5 menit
+
+    // Simpan ke database
+    await db.query(
+      'INSERT INTO otp_verifications (whatsapp_number, otp_code, expires_at) VALUES ($1, $2, $3)',
+      [whatsapp_number, otp, expiresAt]
+    );
+
+    // Kirim via Fonnte
+    const fonnteToken = process.env.WA_API_KEY;
+    await axios.post('https://api.fonnte.com/send', {
+      target: whatsapp_number,
+      message: `Kode verifikasi Fuel Monitoring Anda adalah: *${otp}*. Kode ini berlaku selama 5 menit.`,
+      countryCode: '62'
+    }, {
+      headers: { Authorization: fonnteToken }
+    });
+
+    res.status(200).json({ success: true, message: 'OTP berhasil dikirim ke WhatsApp' });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// Fungsi untuk Verifikasi OTP
+const verifyOtp = async (req, res, next) => {
+  try {
+    const { whatsapp_number, otp_code } = req.body;
+
+    const result = await db.query(
+      'SELECT * FROM otp_verifications WHERE whatsapp_number = $1 AND otp_code = $2 AND expires_at > NOW() ORDER BY created_at DESC LIMIT 1',
+      [whatsapp_number, otp_code]
+    );
+
+    if (result.rows.length === 0) {
+      const error = new Error('Kode OTP salah atau sudah kedaluwarsa');
+      error.statusCode = 400;
+      throw error;
+    }
+
+    // Hapus OTP yang sudah terpakai
+    await db.query('DELETE FROM otp_verifications WHERE whatsapp_number = $1', [whatsapp_number]);
+
+    res.status(200).json({ success: true, message: 'WhatsApp terverifikasi' });
+  } catch (error) {
+    next(error);
+  }
+};
 
 // Controller untuk Registrasi User
 const register = async (req, res, next) => {
@@ -186,5 +244,7 @@ module.exports = {
   register,
   login,
   getMe,
-  firebaseSync
+  firebaseSync,
+  requestOtp,
+  verifyOtp
 };
