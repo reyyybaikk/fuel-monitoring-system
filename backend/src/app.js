@@ -75,7 +75,7 @@ app.use('/api', fuelRoutes);
  const frontendDistPath = path.join(__dirname, '../../frontend/dist');
  app.use(express.static(frontendDistPath));
  // Fallback for SPA routes
- app.get('*', (req, res) => {
+ app.get('/*', (req, res) => {
    res.sendFile(path.join(frontendDistPath, 'index.html'));
  });
 
