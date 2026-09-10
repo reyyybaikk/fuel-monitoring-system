@@ -1,0 +1,22 @@
+# Dependency directories
+node_modules/
+
+# Build and Temp folders
+dist/
+build/
+.temp/
+
+# Environment Variables (SANGAT PENTING: Jangan hapus ini agar password aman)
+.env
+.env.test
+serviceAccountKey.json
+*serviceAccount*.json
+google-services.json
+
+# Logs
+logs/
+*.log
+
+# OS generated files
+.DS_Store
+Thumbs.db

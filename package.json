@@ -1,0 +1,14 @@
+{
+  "name": "fuel-monitoring-system",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "install": "npm --prefix backend install",
+    "start": "npm --prefix backend start",
+    "dev": "npm --prefix backend run dev",
+    "build": "npm --prefix backend run build"
+  },
+  "engines": {
+    "node": ">=24 <25"
+  }
+}
