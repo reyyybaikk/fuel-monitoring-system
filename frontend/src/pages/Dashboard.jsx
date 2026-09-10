@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import StatCard from '../components/StatCard';
 import { api } from '../config/api';
 
 export default function Dashboard() {
@@ -32,25 +32,12 @@ export default function Dashboard() {
   return (
     <div className="p-6">
       <h1 className="text-2xl font-bold mb-4">Dashboard Utama Monitoring BBM</h1>
-      <div className="grid grid-cols-2 gap-4">
-        <div className="bg-white p-4 rounded shadow">
-          <h2 className="font-semibold">Total Transaksi</h2>
-          <p>{summary.totalTransactions}</p>
+        <div className="grid grid-cols-2 gap-4">
+          <StatCard title="Total Transaksi" value={summary.totalTransactions} />
+          <StatCard title="Total Liter" value={summary.totalLiters?.toLocaleString()} />
+          <StatCard title="Total Biaya" value={summary.totalCost?.toLocaleString(undefined, { style: 'currency', currency: 'IDR' })} />
+          <StatCard title="Anomali" value={summary.anomalyCount} />
         </div>
-        <div className="bg-white p-4 rounded shadow">
-          <h2 className="font-semibold">Total Liter</h2>
-          <p>{summary.totalLiters?.toLocaleString()}</p>
-        </div>
-        <div className="bg-white p-4 rounded shadow">
-          <h2 className="font-semibold">Total Biaya</h2>
-          <p>{summary.totalCost?.toLocaleString(undefined, { style: 'currency', currency: 'IDR' })}</p>
-        </div>
-        <div className="bg-white p-4 rounded shadow">
-          <h2 className="font-semibold">Anomali</h2>
-          <p>{summary.anomalyCount}</p>
-        </div>
-      </div>
     </div>
   );
 }
-

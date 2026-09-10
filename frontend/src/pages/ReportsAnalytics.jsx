@@ -15,29 +15,28 @@ export default function ReportsAnalytics() {
   }, []);
 
   return (
-    <div className="p-6">
-      <h1 className="text-2xl font-bold mb-4">Laporan & Analitik Penggunaan BBM</h1>
-      <table className="min-w-full bg-white border">
-        <thead>
-          <tr className="bg-gray-100">
-            <th className="px-4 py-2 border">Bulan</th>
-            <th className="px-4 py-2 border">Total Liter</th>
-            <th className="px-4 py-2 border">Total Biaya</th>
-            <th className="px-4 py-2 border">Rata‑Rata Harga / Liter</th>
-          </tr>
-        </thead>
-        <tbody>
-          {analytics.map((row, idx) => (
-            <tr key={row.month} className={idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
-              <td className="px-4 py-2 border text-center">{row.month}</td>
-              <td className="px-4 py-2 border text-right">{row.totalLiters.toLocaleString()}</td>
-              <td className="px-4 py-2 border text-right">{row.totalCost.toLocaleString(undefined, {style: 'currency', currency: 'IDR'})}</td>
-              <td className="px-4 py-2 border text-right">{row.avgPricePerLiter.toFixed(2)}</td>
+      <div className="bg-white p-6 rounded-lg shadow">
+        <h2 className="text-lg font-semibold mb-4">Laporan & Analitik Penggunaan BBM</h2>
+        <table className="min-w-full bg-white border border-slate-200 divide-y divide-slate-200">
+          <thead className="bg-gray-100">
+            <tr>
+              <th className="px-4 py-2 border">Bulan</th>
+              <th className="px-4 py-2 border">Total Liter</th>
+              <th className="px-4 py-2 border">Total Biaya</th>
+              <th className="px-4 py-2 border">Rata‑Rata Harga / Liter</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
+          </thead>
+          <tbody>
+            {analytics.map((row, idx) => (
+              <tr key={row.month} className={idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+                <td className="px-4 py-2 border text-center">{row.month}</td>
+                <td className="px-4 py-2 border text-right">{row.totalLiters.toLocaleString()}</td>
+                <td className="px-4 py-2 border text-right">{row.totalCost.toLocaleString(undefined, {style: 'currency', currency: 'IDR'})}</td>
+                <td className="px-4 py-2 border text-right">{row.avgPricePerLiter.toFixed(2)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
   );
 }
-
