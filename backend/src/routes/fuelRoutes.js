@@ -92,7 +92,7 @@ router.post('/fuel/transaction', async (req, res) => {
         const insertQuery = `
             INSERT INTO fuel_transactions (
                 transaction_uuid, driver_id, vehicle_id, odometer_before, 
-                odometer_after, liters, total_cost, photo_path, is_synced, created_at
+                odometer_after, fuel_amount, total_cost, photo_path, is_synced, created_at
             ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, NOW())
             RETURNING *;
         `;
@@ -192,9 +192,9 @@ router.get('/fuel/analytics', async (req, res) => {
 
     const query = `
       SELECT DATE_TRUNC('month', created_at) AS month,
-             SUM(liters) AS total_liters,
+             SUM(fuel_amount) AS total_liters,
              SUM(total_cost) AS total_cost,
-             CASE WHEN SUM(liters) > 0 THEN SUM(total_cost) / SUM(liters) ELSE 0 END AS avg_price_per_liter
+             CASE WHEN SUM(fuel_amount) > 0 THEN SUM(total_cost) / SUM(fuel_amount) ELSE 0 END AS avg_price_per_liter
       FROM fuel_transactions
       WHERE created_at BETWEEN $1 AND $2
       GROUP BY month
@@ -229,9 +229,9 @@ router.get('/fuel/summary', async (req, res) => {
   try {
       const query = `
         SELECT COUNT(*) AS total_transactions,
-               SUM(liters) AS total_liters,
+               SUM(fuel_amount) AS total_liters,
                SUM(total_cost) AS total_cost,
-               SUM(CASE WHEN is_anomaly THEN 1 ELSE 0 END) AS anomaly_count
+               SUM(CASE WHEN ml_is_anomaly THEN 1 ELSE 0 END) AS anomaly_count
         FROM fuel_transactions;
       `;
     const { rows } = await db.query(query);
