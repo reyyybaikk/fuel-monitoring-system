@@ -61,6 +61,11 @@ app.get('/api/health', async (req, res) => {
   });
 });
 
+// Root endpoint – simple health check
+app.get('/', (req, res) => {
+  res.status(200).json({ success: true, message: 'Fuel Monitoring API is running' });
+});
+
 // API Routes
 const fuelRoutes = require('./routes/fuelRoutes');
 app.use('/api/vehicles', vehicleRoutes);
