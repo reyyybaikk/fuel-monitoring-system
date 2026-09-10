@@ -71,6 +71,13 @@ const fuelRoutes = require('./routes/fuelRoutes');
 app.use('/api/vehicles', vehicleRoutes);
 app.use('/api', fuelRoutes);
 
+ // Serve frontend static files (built with Vite) in production
+ const frontendDistPath = path.join(__dirname, '../../frontend/dist');
+ app.use(express.static(frontendDistPath));
+ // Fallback for SPA routes
+ app.get('*', (req, res) => {
+   res.sendFile(path.join(frontendDistPath, 'index.html'));
+ });
 
 // Error Handling Middleware (Must remain at the bottom)
 app.use(notFoundHandler);
