@@ -6,11 +6,10 @@ export default function FleetData() {
 
   useEffect(() => {
     const fetchVehicles = async () => {
-      // No dedicated endpoint, reuse vehicle verification for all vehicles (placeholder)
-      // In real app you would have an endpoint like /api/vehicles
-      const res = await fetch(api.transactions()); // temporary reuse
+      // Fetch all vehicles from the proper endpoint
+      const res = await fetch(api.vehicles());
       const json = await res.json();
-      if (json.success) setVehicles(json.data.map(d => d.vehicle_id));
+      if (json.success) setVehicles(json.data);
     };
     fetchVehicles();
   }, []);
