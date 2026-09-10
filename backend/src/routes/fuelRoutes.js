@@ -224,13 +224,13 @@ router.get('/fuel/analytics', async (req, res) => {
 // --------------------
 router.get('/fuel/summary', async (req, res) => {
   try {
-    const query = `
-      SELECT COUNT(*) AS total_transactions,
-             SUM(liters) AS total_liters,
-             SUM(total_cost) AS total_cost,
-             SUM(CASE WHEN ml_is_anomaly THEN 1 ELSE 0 END) AS anomaly_count
-      FROM fuel_transactions;
-    `;
+      const query = `
+        SELECT COUNT(*) AS total_transactions,
+               SUM(fuel_amount) AS total_liters,
+               SUM(total_cost) AS total_cost,
+               SUM(CASE WHEN ml_is_anomaly THEN 1 ELSE 0 END) AS anomaly_count
+        FROM fuel_transactions;
+      `;
     const { rows } = await db.query(query);
     const r = rows[0];
     return res.status(200).json({
