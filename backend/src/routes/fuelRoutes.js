@@ -128,24 +128,7 @@ router.post('/fuel/transaction', async (req, res) => {
 }); // close router.post
 
 
-router.get('/fuel/transaction', async (req, res) => {
-  try {
-    // Fetch all vehicles (armada) from the database
-    const { rows } = await db.query('SELECT * FROM vehicles');
-    return res.status(200).json({
-      success: true,
-      message: 'Daftar armada berhasil diambil',
-      data: rows,
-    });
-  } catch (error) {
-    console.error('Error saat mengambil data armada:', error);
-    return res.status(500).json({
-      success: false,
-      message: 'Gagal mengambil data armada',
-      error: error.message,
-    });
-  }
-});
+
 
 // ==========================================
 // 3. ENDPOINT: GENERATE QR CODE (Untuk Admin Cetak Stiker)
