@@ -62,10 +62,10 @@ app.get('/api/health', async (req, res) => {
 });
 
 // API Routes
-app.use('/api/auth', authRoutes);
-app.use('/api/vehicles', vehicleRoutes);
-app.use('/api/drivers', driverRoutes);
-app.use('/api/fuel-transactions', fuelTransactionRoutes);
+const fuelRoutes = require('./routes/fuelRoutes');
+// Mount fuelRoutes for fuel-related endpoints (verification, transaction, analytics, summary)
+app.use('/api', fuelRoutes);
+
 
 // Error Handling Middleware (Must remain at the bottom)
 app.use(notFoundHandler);

@@ -6,7 +6,7 @@ const fuelRoutes = require('./routes/fuelRoutes'); // Mengimpor rute API verifik
 const PORT = process.env.PORT || 3000;
 
 // Daftarkan rute API utama ke dalam aplikasi Express
-app.use('/api', fuelRoutes);
+// Duplicate mount removed; fuelRoutes are mounted in app.js
 
 // Fungsi untuk menguji koneksi database sebelum server menyala
 async function startServer() {
