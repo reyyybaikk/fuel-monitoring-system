@@ -121,10 +121,13 @@ router.post('/fuel/transaction', async (req, res) => {
         console.error('Error saat menyimpan transaksi:', error);
         return res.status(500).json({ 
             success: false, 
-            message: 'Gagal menyimpan transaksi ke server',
+            message: 'Gagal menyimpan transaksi ke server', 
             error: error.message 
         });
     }
+}); // close router.post
+
+
 router.get('/fuel/transaction', async (req, res) => {
   try {
     // Fetch all vehicles (armada) from the database
