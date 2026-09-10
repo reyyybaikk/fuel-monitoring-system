@@ -63,7 +63,7 @@ app.get('/api/health', async (req, res) => {
 
 // API Routes
 const fuelRoutes = require('./routes/fuelRoutes');
-// Mount fuelRoutes for fuel-related endpoints (verification, transaction, analytics, summary)
+app.use('/api/vehicles', vehicleRoutes);
 app.use('/api', fuelRoutes);
 
 
