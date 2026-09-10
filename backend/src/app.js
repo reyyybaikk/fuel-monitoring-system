@@ -74,10 +74,10 @@ app.use('/api', fuelRoutes);
  // Serve frontend static files (built with Vite) in production
  const frontendDistPath = path.join(__dirname, '../../frontend/dist');
  app.use(express.static(frontendDistPath));
- // Fallback for SPA routes
- app.get('/*', (req, res) => {
-   res.sendFile(path.join(frontendDistPath, 'index.html'));
- });
+  // Fallback for SPA routes – serve index.html for any unmatched request
+  app.use((req, res) => {
+    res.sendFile(path.join(frontendDistPath, 'index.html'));
+  });
 
 // Error Handling Middleware (Must remain at the bottom)
 app.use(notFoundHandler);
