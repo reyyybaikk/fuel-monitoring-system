@@ -2,40 +2,60 @@ const { verifyToken } = require('../utils/jwt');
 const { verifyFirebaseToken, isFirebaseInitialized } = require('../config/firebase');
 const userRepository = require('../repositories/userRepository');
 
-// Middleware untuk Authentication Hybrid (Mendukung JWT Lokal, Firebase ID Token, & Fallback Mobile)
+/**
+ * Helper function to set a fallback user when authentication fails
+ */
+const useFallback = async (req, next, reason = 'Token tidak valid atau tidak ada') => {
+  try {
+    console.warn(`[Auth Fallback] ${reason}. Menggunakan default driver.`);
+    const defaultDriver = await userRepository.getDefaultDriver();
+    req.user = {
+      id: defaultDriver.id,
+      email: defaultDriver.email,
+      role: defaultDriver.role || 'DRIVER',
+      username: defaultDriver.username,
+      isFallback: true
+    };
+    return next();
+  } catch (err) {
+    return next(err);
+  }
+};
+
+/**
+ * Hybrid Authentication Middleware
+ * Supports: Local JWT, Supabase JWT, and Firebase ID Token
+ */
 const authenticate = async (req, res, next) => {
   try {
     const authHeader = req.headers.authorization;
 
-    // Jika tidak ada header Authorization, gunakan driver fallback agar transaksi mobile tetap berjalan
+    // 1. Check if Authorization header exists
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      const defaultDriver = await userRepository.getDefaultDriver();
-      req.user = {
-        id: defaultDriver.id,
-        email: defaultDriver.email,
-        role: defaultDriver.role || 'DRIVER',
-        username: defaultDriver.username,
-        isFallback: true
-      };
-      console.log(`[Auth Fallback] Permintaan tanpa token diterima. Mengaitkan ke Driver: ${defaultDriver.full_name || defaultDriver.username} (ID: ${defaultDriver.id}).`);
-      return next();
+      return useFallback(req, next, 'Header Authorization tidak ditemukan');
     }
 
     const token = authHeader.split(' ')[1];
 
-    // 1. Coba verifikasi sebagai Token JWT Lokal (Web Admin / Standar)
+    // 2. Prevent processing empty or "null"/"undefined" strings as tokens
+    if (!token || token === 'null' || token === 'undefined') {
+      return useFallback(req, next, 'Token kosong atau invalid string');
+    }
+
+    // --- STRATEGY 1: Local JWT ---
     const localDecoded = verifyToken(token);
     if (localDecoded) {
-      req.user = localDecoded; // { id, email, role }
+      req.user = localDecoded;
       return next();
     }
 
-      // 2. Jika bukan JWT lokal, coba verifikasi sebagai JWT Supabase
+    // --- STRATEGY 2: Supabase JWT ---
+    // Only attempt if it looks like a JWT
+    if (token.split('.').length === 3) {
       try {
         const jwt = require('jsonwebtoken');
         const publicKey = require('../config/jwtPublicKey.json');
         const supabasePayload = jwt.verify(token, publicKey, { algorithms: ['ES256'] });
-        // Supabase token biasanya memiliki claim `sub` (user id) and `role`
         req.user = {
           id: supabasePayload.sub,
           email: supabasePayload.email,
@@ -43,18 +63,18 @@ const authenticate = async (req, res, next) => {
         };
         return next();
       } catch (supabaseErr) {
-        // ignore and continue to Firebase fallback
+        // Ignore and continue to Firebase
       }
+    }
 
-    // 2. Jika bukan JWT lokal, coba verifikasi sebagai Firebase ID Token (Mobile App)
-    if (isFirebaseInitialized()) {
+    // --- STRATEGY 3: Firebase ID Token ---
+    // Critical Fix: Only call Firebase if it's a valid JWT format to avoid "no kid claim" error
+    if (isFirebaseInitialized() && token.split('.').length === 3) {
       const firebaseDecoded = await verifyFirebaseToken(token);
       if (firebaseDecoded && firebaseDecoded.email) {
-        // Ambil data profil tambahan dari query string (dikirim saat sync pertama kali)
         const fullName = req.query.full_name || firebaseDecoded.name || firebaseDecoded.email.split('@')[0];
         const whatsappNumber = req.query.whatsapp_number || null;
 
-        // Cari atau buat record user otomatis di PostgreSQL
         const dbUser = await userRepository.findOrCreateFirebaseUser({
           email: firebaseDecoded.email,
           fullName: fullName,
@@ -80,37 +100,29 @@ const authenticate = async (req, res, next) => {
       }
     }
 
-    // 3. Jika token ada tapi tidak valid, tetap fallback ke default driver agar pengujian mobile tidak macet
-    console.warn('[Auth Warning] Token tidak valid / kedaluwarsa. Mengalihkan ke default driver...');
-    const defaultDriver = await userRepository.getDefaultDriver();
-    req.user = {
-      id: defaultDriver.id,
-      email: defaultDriver.email,
-      role: defaultDriver.role || 'DRIVER',
-      username: defaultDriver.username,
-      isFallback: true
-    };
-    return next();
+    // --- FINAL FALLBACK ---
+    return useFallback(req, next, 'Semua metode autentikasi gagal');
+
   } catch (error) {
     next(error);
   }
 };
 
-// Middleware untuk Authorization (Memeriksa hak akses role)
+/**
+ * Authorization Middleware (Role-based access control)
+ */
 const authorize = (...allowedRoles) => {
   return (req, res, next) => {
     try {
-      // Pastikan authenticate dijalankan sebelum authorize agar req.user tersedia
       if (!req.user) {
         const error = new Error('Unauthorized: Sesi pengguna tidak terdeteksi');
         error.statusCode = 401;
         throw error;
       }
 
-      // Periksa apakah role user terdaftar dalam daftar role yang diizinkan
       if (!allowedRoles.includes(req.user.role)) {
         const error = new Error(`Forbidden: Role '${req.user.role}' tidak memiliki hak akses untuk fitur ini`);
-        error.statusCode = 403; // Forbidden
+        error.statusCode = 403;
         throw error;
       }
 
