@@ -61,7 +61,7 @@ const frontendDistPath = path.join(__dirname, '../../frontend/dist');
 app.use(express.static(frontendDistPath));
 
 // Support for Single Page Application (SPA) - Fallback to index.html
-app.get('*', (req, res, next) => {
+app.get('/*', (req, res, next) => {
   // If request is for /api, don't serve index.html, let it 404
   if (req.path.startsWith('/api')) {
     return next();
