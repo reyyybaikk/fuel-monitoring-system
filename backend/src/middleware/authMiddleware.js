@@ -68,35 +68,44 @@ const authenticate = async (req, res, next) => {
     }
 
     // --- STRATEGY 3: Firebase ID Token ---
-    // Critical Fix: Only call Firebase if it's a valid JWT format to avoid "no kid claim" error
+    // Pengecekan lebih ketat: Hanya panggil Firebase jika header JWT memiliki 'kid'
     if (isFirebaseInitialized() && token.split('.').length === 3) {
-      const firebaseDecoded = await verifyFirebaseToken(token);
-      if (firebaseDecoded && firebaseDecoded.email) {
-        const fullName = req.query.full_name || firebaseDecoded.name || firebaseDecoded.email.split('@')[0];
-        const whatsappNumber = req.query.whatsapp_number || null;
+      try {
+        const jwt = require('jsonwebtoken');
+        const decoded = jwt.decode(token, { complete: true });
 
-        const dbUser = await userRepository.findOrCreateFirebaseUser({
-          email: firebaseDecoded.email,
-          fullName: fullName,
-          whatsappNumber: whatsappNumber
-        });
+        if (decoded && decoded.header && decoded.header.kid) {
+          const firebaseDecoded = await verifyFirebaseToken(token);
+          if (firebaseDecoded && firebaseDecoded.email) {
+            const fullName = req.query.full_name || firebaseDecoded.name || firebaseDecoded.email.split('@')[0];
+            const whatsappNumber = req.query.whatsapp_number || null;
 
-        if (!dbUser.is_active) {
-          const error = new Error('Akun Anda telah dinonaktifkan oleh Administrator');
-          error.statusCode = 403;
-          throw error;
+            const dbUser = await userRepository.findOrCreateFirebaseUser({
+              email: firebaseDecoded.email,
+              fullName: fullName,
+              whatsappNumber: whatsappNumber
+            });
+
+            if (!dbUser.is_active) {
+              const error = new Error('Akun Anda telah dinonaktifkan oleh Administrator');
+              error.statusCode = 403;
+              throw error;
+            }
+
+            req.user = {
+              id: dbUser.id,
+              email: dbUser.email,
+              role: dbUser.role,
+              username: dbUser.username,
+              full_name: dbUser.full_name,
+              whatsapp_number: dbUser.whatsapp_number,
+              firebaseUid: firebaseDecoded.uid
+            };
+            return next();
+          }
         }
-
-        req.user = {
-          id: dbUser.id,
-          email: dbUser.email,
-          role: dbUser.role,
-          username: dbUser.username,
-          full_name: dbUser.full_name,
-          whatsapp_number: dbUser.whatsapp_number,
-          firebaseUid: firebaseDecoded.uid
-        };
-        return next();
+      } catch (firebaseErr) {
+        // Abaikan error di sini, biarkan lanjut ke fallback
       }
     }
 
