@@ -60,11 +60,15 @@ app.use('/api/fuel-transactions', fuelTransactionRoutes);
 const frontendDistPath = path.join(__dirname, '../../frontend/dist');
 app.use(express.static(frontendDistPath));
 
+// Root endpoint – simple health check for Render
+app.get('/', (req, res) => {
+  res.status(200).json({ success: true, message: 'Fuel Monitoring API is running' });
+});
+
 // Support for Single Page Application (SPA) - Fallback to index.html
-// Menggunakan middleware tanpa path string untuk menghindari error wildcard di Express 5
 app.use((req, res, next) => {
-  // Hanya proses jika request adalah GET dan bukan untuk API
-  if (req.method === 'GET' && !req.path.startsWith('/api') && !req.path.startsWith('/uploads')) {
+  // Dukung GET dan HEAD untuk rute non-API
+  if ((req.method === 'GET' || req.method === 'HEAD') && !req.path.startsWith('/api') && !req.path.startsWith('/uploads')) {
     return res.sendFile(path.join(frontendDistPath, 'index.html'), (err) => {
       if (err) {
         next();
