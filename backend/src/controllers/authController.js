@@ -22,10 +22,10 @@ const requestOtp = async (req, res, next) => {
       [cleanNumber, otp, expiresAt]
     );
 
-    // Kirim via Fonnte (Menggunakan API KEY)
+    // Kirim via Fonnte
     const fonnteToken = process.env.WA_API_KEY;
 
-    console.log(`[OTP] Mencoba mengirim ke ${cleanNumber} menggunakan Fonnte...`);
+    console.log(`[OTP] Mencoba mengirim ke ${cleanNumber}...`);
 
     const response = await axios.post('https://api.fonnte.com/send', {
       target: cleanNumber,
@@ -41,7 +41,7 @@ const requestOtp = async (req, res, next) => {
         res.status(200).json({ success: true, message: 'OTP berhasil dikirim ke WhatsApp' });
     } else {
         console.error(`[OTP Error] Fonnte Error:`, response.data);
-        throw new Error(response.data.reason || 'Fonnte gagal mengirim pesan. Pastikan API KEY benar.');
+        throw new Error(response.data.reason || 'Fonnte gagal mengirim pesan. Pastikan token API benar.');
     }
 
   } catch (error) {
