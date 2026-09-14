@@ -61,23 +61,11 @@ app.get('/api/health', async (req, res) => {
   });
 });
 
-// Root endpoint – simple health check
-app.get('/', (req, res) => {
-  res.status(200).json({ success: true, message: 'Fuel Monitoring API is running' });
-});
-
 // API Routes
-const fuelRoutes = require('./routes/fuelRoutes');
+app.use('/api/auth', authRoutes);
 app.use('/api/vehicles', vehicleRoutes);
-app.use('/api', fuelRoutes);
-
- // Serve frontend static files (built with Vite) in production
- const frontendDistPath = path.join(__dirname, '../../frontend/dist');
- app.use(express.static(frontendDistPath));
-  // Fallback for SPA routes – serve index.html for any unmatched request
-  app.use((req, res) => {
-    res.sendFile(path.join(frontendDistPath, 'index.html'));
-  });
+app.use('/api/drivers', driverRoutes);
+app.use('/api/fuel-transactions', fuelTransactionRoutes);
 
 // Error Handling Middleware (Must remain at the bottom)
 app.use(notFoundHandler);
