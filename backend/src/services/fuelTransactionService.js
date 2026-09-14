@@ -7,15 +7,13 @@ class FuelTransactionService {
   async createTransaction(data, userId) {
     const { vehicle_id, filling_source, fuel_type, fuel_amount, odometer, total_cost } = data;
 
-    // 1. Mandatory field validation
     if (!vehicle_id || !filling_source || !fuel_type || !fuel_amount || !odometer || !total_cost) {
       const error = new Error('Field vehicle_id, filling_source, fuel_type, fuel_amount, odometer, dan total_cost wajib diisi');
       error.statusCode = 400;
       throw error;
     }
 
-    // 2. Numeric validation
-    if (isNaN(fuel_amount) || Number(fuel_amount) <= 0 || 
+    if (isNaN(fuel_amount) || Number(fuel_amount) <= 0 ||
         isNaN(odometer) || Number(odometer) < 0 || 
         isNaN(total_cost) || Number(total_cost) < 0) {
       const error = new Error('Nilai jumlah BBM, odometer, dan total harga tidak valid');
@@ -23,7 +21,6 @@ class FuelTransactionService {
       throw error;
     }
 
-    // 3. Enum validations
     const validSources = ['SPBU', 'ECERAN'];
     if (!validSources.includes(filling_source.toUpperCase())) {
       const error = new Error('Sumber pengisian harus SPBU atau ECERAN');
@@ -39,7 +36,6 @@ class FuelTransactionService {
       throw error;
     }
 
-    // 4. Verify active vehicle status
     const vehicle = await vehicleRepository.findById(vehicle_id);
     if (!vehicle || !vehicle.is_active) {
       const error = new Error('Kendaraan tidak ditemukan atau sudah tidak aktif');
@@ -47,7 +43,6 @@ class FuelTransactionService {
       throw error;
     }
 
-    // 5. Anti-Fraud: Cek apakah foto nota/struk sudah pernah digunakan sebelumnya (Duplicate Receipt Check)
     if (data.receipt_photo && data.receipt_photo.buffer) {
       const crypto = require('crypto');
       const receiptHash = crypto.createHash('sha256').update(data.receipt_photo.buffer).digest('hex');
@@ -60,31 +55,12 @@ class FuelTransactionService {
     }
 
     const payload = { ...data, driver_id: userId, fuel_type };
-    
-    // Save record with photo BYTEA buffers directly to PostgreSQL
     const newTransaction = await fuelTransactionRepository.create(payload);
 
-    // Queue transaction ID for background ML analysis
     try {
-      // Option A: BullMQ Job
-      await fuelAnalysisQueue.add(
-        'analyze-transaction', 
-        { transactionId: newTransaction.id },
-        {
-          attempts: 3,
-          backoff: { type: 'exponential', delay: 2000 },
-          removeOnComplete: true,
-          removeOnFail: false
-        }
-      );
-
-      // Option B: Direct Redis LPUSH for Python Worker
-      const queueLength = await redisClient.lPush('fuel_queue', JSON.stringify({ transactionId: newTransaction.id }));
-      console.log(`[Queue] Job ID ${newTransaction.id} masuk ke 'fuel_queue'. Total antrean: ${queueLength}`);
-
-      console.log(`[Queue] Job untuk transaksi ID ${newTransaction.id} berhasil ditambahkan ke antrean.`);
+      await redisClient.lPush('fuel_queue', JSON.stringify({ transactionId: newTransaction.id }));
+      console.log(`[Queue] Job ID ${newTransaction.id} masuk ke 'fuel_queue'.`);
     } catch (error) {
-      // Non-blocking catch to ensure driver receives success HTTP payload even if Redis is down
       console.error(`[Queue Error] Gagal memasukkan transaksi ${newTransaction.id} ke antrean:`, error.message);
     }
 
@@ -175,6 +151,14 @@ class FuelTransactionService {
       throw error;
     }
     return await fuelTransactionRepository.updateStatus(id, status);
+  }
+
+  async getAnalytics(start, end) {
+    return await fuelTransactionRepository.getAnalytics(start, end);
+  }
+
+  async getSummary() {
+    return await fuelTransactionRepository.getSummary();
   }
 }
 
