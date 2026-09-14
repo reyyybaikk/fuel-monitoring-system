@@ -61,17 +61,17 @@ const frontendDistPath = path.join(__dirname, '../../frontend/dist');
 app.use(express.static(frontendDistPath));
 
 // Support for Single Page Application (SPA) - Fallback to index.html
-app.get('/:any*', (req, res, next) => {
-  // If request is for /api, don't serve index.html, let it 404
-  if (req.path.startsWith('/api')) {
-    return next();
+// Menggunakan middleware tanpa path string untuk menghindari error wildcard di Express 5
+app.use((req, res, next) => {
+  // Hanya proses jika request adalah GET dan bukan untuk API
+  if (req.method === 'GET' && !req.path.startsWith('/api') && !req.path.startsWith('/uploads')) {
+    return res.sendFile(path.join(frontendDistPath, 'index.html'), (err) => {
+      if (err) {
+        next();
+      }
+    });
   }
-  res.sendFile(path.join(frontendDistPath, 'index.html'), (err) => {
-    if (err) {
-      // If index.html not found, pass to error handler
-      next();
-    }
-  });
+  next();
 });
 
 // Error Handling Middleware
