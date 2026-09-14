@@ -3,29 +3,32 @@ const router = express.Router();
 const fuelTransactionController = require('../controllers/fuelTransactionController');
 const uploadTransactionPhotos = require('../middleware/uploadMiddleware');
 const { authenticate, authorize } = require('../middleware/authMiddleware');
-const { uploadFile } = require('../services/uploadService');
 
 // Semua endpoint wajib terautentikasi JWT
 router.use(authenticate);
 
-// DRIVER: Membuat transaksi (Menerima multipart/form-data)
+// 1. ANALYTICS & SUMMARY (Khusus ADMIN/MANAGER - Ported from legacy)
+router.get('/analytics', authorize('ADMIN', 'MANAGER'), fuelTransactionController.getAnalytics);
+router.get('/summary', authorize('ADMIN', 'MANAGER'), fuelTransactionController.getSummary);
+
+// 2. DRIVER: Membuat transaksi (Menerima multipart/form-data)
 router.post(
   '/',
   authorize('DRIVER'),
-  uploadTransactionPhotos, // Middleware multer untuk menangkap 3 file
+  uploadTransactionPhotos,
   fuelTransactionController.create
 );
 
-// SEMUA ROLE: Melihat riwayat transaksi (PASTIKAN DI ATAS /:id)
+// 3. RIWAYAT TRANSAKSI
 router.get('/history', fuelTransactionController.getAll);
 
-// SEMUA ROLE: Melihat detail transaksi
+// 4. DETAIL TRANSAKSI
 router.get('/:id', fuelTransactionController.getById);
 
-// STREAM FOTO DARI DATABASE: Mendapatkan binary foto
+// 5. STREAM FOTO
 router.get('/:id/photo/:type', fuelTransactionController.getPhoto);
 
-// ADMIN/MANAGER: Memverifikasi / mengubah status transaksi
+// 6. ADMIN/MANAGER: Verifikasi Status
 router.patch('/:id/status', authorize('ADMIN', 'MANAGER'), fuelTransactionController.updateStatus);
 
 module.exports = router;
