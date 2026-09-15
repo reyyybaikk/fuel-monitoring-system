@@ -113,7 +113,7 @@ class FuelTransactionRepository {
              (ft.receipt_photo_path IS NOT NULL) AS has_receipt_photo,
              (ft.odometer_after_photo_path IS NOT NULL) AS has_odometer_after_photo,
              ft.odometer_photo_path, ft.receipt_photo_path, ft.odometer_after_photo_path,
-             ft.ml_is_anomaly, ft.ml_anomaly_score, ft.ml_anomaly_reasons, ft.ocr_receipt_data,
+             ft.ml_is_anomaly, ft.ml_anomaly_score, ft.ocr_receipt_data,
              ft.real_fuel_consumption,
              ft.status, ft.notes, ft.created_at, ft.updated_at
       FROM fuel_transactions ft
@@ -181,7 +181,7 @@ class FuelTransactionRepository {
              (ft.odometer_after_photo_path IS NOT NULL) AS has_odometer_after_photo,
              ft.odometer_photo_path, ft.receipt_photo_path, ft.odometer_after_photo_path,
              ft.ocr_receipt_data, ft.ocr_odometer_before, ft.ocr_odometer_after,
-             ft.ml_is_anomaly, ft.ml_anomaly_score, ft.ml_anomaly_reasons,
+             ft.ml_is_anomaly, ft.ml_anomaly_score,
              ft.created_at, ft.updated_at
       FROM fuel_transactions ft
       JOIN vehicles v ON ft.vehicle_id = v.id
