@@ -77,14 +77,14 @@ class FuelTransactionController {
     }
   };
 
-  // 4. Stream a transaction photo
+  // 4. Stream a transaction photo (Now redirects to Supabase Storage)
   getPhoto = async (req, res, next) => {
     try {
       const { id, type } = req.params;
       const photo = await fuelTransactionService.getTransactionPhoto(id, type, req.user);
-      res.set('Content-Type', photo.mimetype);
-      res.set('Cache-Control', 'public, max-age=86400');
-      res.send(photo.data);
+
+      // Redirect ke URL Supabase Storage untuk efisiensi bandwidth backend
+      return res.redirect(photo.url);
     } catch (error) {
       next(error);
     }
