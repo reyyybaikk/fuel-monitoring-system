@@ -16,7 +16,10 @@ router.get('/verify/:licensePlate', async (req, res) => {
         const queryText = `
             SELECT v.*, rc.admin_whatsapp
             FROM vehicles v
-            LEFT JOIN region_contacts rc ON LOWER(TRIM(v.ul_nd)) = LOWER(TRIM(rc.ul_nd))
+            LEFT JOIN region_contacts rc ON (
+                LOWER(TRIM(v.ul_nd)) = LOWER(TRIM(rc.ul_nd)) OR
+                LOWER(TRIM(v.ul_pln)) = LOWER(TRIM(rc.ul_nd))
+            )
             WHERE LOWER(REPLACE(v.license_plate, ' ', '')) = LOWER(REPLACE($1, ' ', ''))
         `;
         const { rows } = await db.query(queryText, [licensePlate.trim()]);
