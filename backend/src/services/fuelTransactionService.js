@@ -125,15 +125,14 @@ class FuelTransactionService {
       throw error;
     }
 
-    if (!photoRecord.photo_data) {
+    if (!photoRecord.photo_url) {
       const error = new Error(`Foto '${type}' tidak tersedia untuk transaksi ini`);
       error.statusCode = 404;
       throw error;
     }
 
     return {
-      data: photoRecord.photo_data,
-      mimetype: photoRecord.photo_mimetype || 'image/jpeg'
+      url: photoRecord.photo_url
     };
   }
 

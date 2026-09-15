@@ -68,12 +68,9 @@ class FuelTransactionRepository {
         vehicle_id, driver_id, filling_source, fuel_type, fuel_amount,
         odometer, total_cost, latitude, longitude, address, notes, status,
         odometer_photo_path, receipt_photo_path, odometer_after_photo_path,
-        receipt_photo_hash, photo_url,
-        odometer_photo_data, odometer_photo_mimetype,
-        receipt_photo_data, receipt_photo_mimetype,
-        odometer_after_photo_data, odometer_after_photo_mimetype
+        receipt_photo_hash, photo_url
       )
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, 'PENDING', $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, 'PENDING', $12, $13, $14, $15, $16)
       RETURNING id, vehicle_id, driver_id, filling_source, fuel_type, fuel_amount, 
                 odometer, total_cost, latitude, longitude, address, status, notes, created_at, updated_at;
     `;
@@ -94,13 +91,7 @@ class FuelTransactionRepository {
       receipt_photo_url,         // Disimpan sebagai URL Supabase
       odometer_after_photo_url,  // Disimpan sebagai URL Supabase
       receipt_photo_hash,
-      receipt_photo_url,         // photo_url utama (nota)
-      odometer_photo ? odometer_photo.buffer : null,
-      odometer_photo ? odometer_photo.mimetype : null,
-      receipt_photo ? receipt_photo.buffer : null,
-      receipt_photo ? receipt_photo.mimetype : null,
-      odometer_after_photo ? odometer_after_photo.buffer : null,
-      odometer_after_photo ? odometer_after_photo.mimetype : null
+      receipt_photo_url          // photo_url utama (nota)
     ];
 
     const result = await db.query(query, values);
@@ -112,9 +103,10 @@ class FuelTransactionRepository {
       SELECT ft.id, ft.vehicle_id, v.license_plate, v.vehicle_type, v.ul_nd as region, ft.driver_id, u.full_name as driver_name, 
              ft.filling_source, ft.fuel_type, ft.fuel_amount, ft.odometer, ft.total_cost, 
              ft.latitude, ft.longitude, ft.address,
-             (ft.odometer_photo_data IS NOT NULL) AS has_odometer_photo,
-             (ft.receipt_photo_data IS NOT NULL) AS has_receipt_photo,
-             (ft.odometer_after_photo_data IS NOT NULL) AS has_odometer_after_photo,
+             (ft.odometer_photo_path IS NOT NULL) AS has_odometer_photo,
+             (ft.receipt_photo_path IS NOT NULL) AS has_receipt_photo,
+             (ft.odometer_after_photo_path IS NOT NULL) AS has_odometer_after_photo,
+             ft.odometer_photo_path, ft.receipt_photo_path, ft.odometer_after_photo_path,
              ft.ml_is_anomaly, ft.ml_anomaly_score, ft.ml_anomaly_reasons, ft.ocr_receipt_data,
              ft.real_fuel_consumption,
              ft.status, ft.notes, ft.created_at, ft.updated_at
@@ -178,9 +170,10 @@ class FuelTransactionRepository {
       SELECT ft.id, ft.vehicle_id, v.license_plate, ft.driver_id, u.full_name as driver_name,
              ft.filling_source, ft.fuel_type, ft.fuel_amount, ft.odometer, ft.total_cost,
              ft.latitude, ft.longitude, ft.address, ft.status, ft.notes,
-             (ft.odometer_photo_data IS NOT NULL) AS has_odometer_photo,
-             (ft.receipt_photo_data IS NOT NULL) AS has_receipt_photo,
-             (ft.odometer_after_photo_data IS NOT NULL) AS has_odometer_after_photo,
+             (ft.odometer_photo_path IS NOT NULL) AS has_odometer_photo,
+             (ft.receipt_photo_path IS NOT NULL) AS has_receipt_photo,
+             (ft.odometer_after_photo_path IS NOT NULL) AS has_odometer_after_photo,
+             ft.odometer_photo_path, ft.receipt_photo_path, ft.odometer_after_photo_path,
              ft.ocr_receipt_data, ft.ocr_odometer_before, ft.ocr_odometer_after,
              ft.ml_is_anomaly, ft.ml_anomaly_score, ft.ml_anomaly_reasons,
              ft.created_at, ft.updated_at
@@ -194,22 +187,18 @@ class FuelTransactionRepository {
   }
 
   async getPhotoByIdAndType(id, type) {
-    let dataCol = 'receipt_photo_data';
-    let mimeCol = 'receipt_photo_mimetype';
+    let pathCol = 'receipt_photo_path';
 
     if (type === 'odometer' || type === 'odometer_photo' || type === 'odometer-before') {
-      dataCol = 'odometer_photo_data';
-      mimeCol = 'odometer_photo_mimetype';
+      pathCol = 'odometer_photo_path';
     } else if (type === 'odometer-after' || type === 'odometer_after' || type === 'odometer_after_photo') {
-      dataCol = 'odometer_after_photo_data';
-      mimeCol = 'odometer_after_photo_mimetype';
+      pathCol = 'odometer_after_photo_path';
     } else {
-      dataCol = 'receipt_photo_data';
-      mimeCol = 'receipt_photo_mimetype';
+      pathCol = 'receipt_photo_path';
     }
 
     const query = `
-      SELECT id, driver_id, ${dataCol} AS photo_data, ${mimeCol} AS photo_mimetype
+      SELECT id, driver_id, ${pathCol} AS photo_url
       FROM fuel_transactions
       WHERE id = $1
     `;
