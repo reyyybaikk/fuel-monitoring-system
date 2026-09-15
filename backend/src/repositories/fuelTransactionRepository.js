@@ -25,11 +25,17 @@ class FuelTransactionRepository {
       odometer_photo, receipt_photo, odometer_after_photo
     } = data;
 
+    // Ambil license plate untuk struktur folder storage
+    const vehicle = await vehicleRepository.findById(vehicle_id);
+    const plate = (vehicle ? vehicle.license_plate : 'unknown').replace(/\s+/g, '-').toUpperCase();
+
+    const now = new Date();
+    const yearMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+    const storagePath = `transactions/${plate}/${yearMonth}`;
     const timestamp = Date.now();
 
-    // 1. Upload ke Supabase & Simpan Lokal secara paralel untuk efisiensi
+    // 1. Upload ke Supabase
     const uploadTasks = [];
-
     let receipt_photo_url = null;
     let odometer_photo_url = null;
     let odometer_after_photo_url = null;
@@ -38,25 +44,25 @@ class FuelTransactionRepository {
     if (receipt_photo && receipt_photo.buffer) {
       receipt_photo_hash = crypto.createHash('sha256').update(receipt_photo.buffer).digest('hex');
       const ext = path.extname(receipt_photo.originalname || '.jpg').toLowerCase() || '.jpg';
-      const fileName = `receipt-${timestamp}-${driver_id}${ext}`;
+      const fileName = `receipt-${timestamp}${ext}`;
       uploadTasks.push(
-        uploadFile(receipt_photo.buffer, `fuel/${fileName}`).then(url => receipt_photo_url = url)
+        uploadFile(receipt_photo.buffer, `${storagePath}/${fileName}`).then(url => receipt_photo_url = url)
       );
     }
 
     if (odometer_photo && odometer_photo.buffer) {
       const ext = path.extname(odometer_photo.originalname || '.jpg').toLowerCase() || '.jpg';
-      const fileName = `odo-before-${timestamp}-${driver_id}${ext}`;
+      const fileName = `odo-before-${timestamp}${ext}`;
       uploadTasks.push(
-        uploadFile(odometer_photo.buffer, `fuel/${fileName}`).then(url => odometer_photo_url = url)
+        uploadFile(odometer_photo.buffer, `${storagePath}/${fileName}`).then(url => odometer_photo_url = url)
       );
     }
 
     if (odometer_after_photo && odometer_after_photo.buffer) {
       const ext = path.extname(odometer_after_photo.originalname || '.jpg').toLowerCase() || '.jpg';
-      const fileName = `odo-after-${timestamp}-${driver_id}${ext}`;
+      const fileName = `odo-after-${timestamp}${ext}`;
       uploadTasks.push(
-        uploadFile(odometer_after_photo.buffer, `fuel/${fileName}`).then(url => odometer_after_photo_url = url)
+        uploadFile(odometer_after_photo.buffer, `${storagePath}/${fileName}`).then(url => odometer_after_photo_url = url)
       );
     }
 
@@ -68,9 +74,9 @@ class FuelTransactionRepository {
         vehicle_id, driver_id, filling_source, fuel_type, fuel_amount,
         odometer, total_cost, latitude, longitude, address, notes, status,
         odometer_photo_path, receipt_photo_path, odometer_after_photo_path,
-        receipt_photo_hash, photo_url
+        receipt_photo_hash
       )
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, 'PENDING', $12, $13, $14, $15, $16)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, 'PENDING', $12, $13, $14, $15)
       RETURNING id, vehicle_id, driver_id, filling_source, fuel_type, fuel_amount, 
                 odometer, total_cost, latitude, longitude, address, status, notes, created_at, updated_at;
     `;
@@ -87,11 +93,10 @@ class FuelTransactionRepository {
       longitude || null,
       address || null,
       notes || null,
-      odometer_photo_url,        // Disimpan sebagai URL Supabase
-      receipt_photo_url,         // Disimpan sebagai URL Supabase
-      odometer_after_photo_url,  // Disimpan sebagai URL Supabase
-      receipt_photo_hash,
-      receipt_photo_url          // photo_url utama (nota)
+      odometer_photo_url,
+      receipt_photo_url,
+      odometer_after_photo_url,
+      receipt_photo_hash
     ];
 
     const result = await db.query(query, values);
