@@ -12,10 +12,12 @@ router.get('/verify/:licensePlate', async (req, res) => {
     try {
         const { licensePlate } = req.params;
         
-        // Mengabaikan spasi dan huruf besar-kecil saat pencarian
+        // Mengabaikan spasi dan huruf besar-kecil saat pencarian, sertakan admin_whatsapp via JOIN
         const queryText = `
-            SELECT * FROM vehicles 
-            WHERE LOWER(REPLACE(license_plate, ' ', '')) = LOWER(REPLACE($1, ' ', ''))
+            SELECT v.*, rc.admin_whatsapp
+            FROM vehicles v
+            LEFT JOIN region_contacts rc ON v.ul_nd = rc.ul_nd
+            WHERE LOWER(REPLACE(v.license_plate, ' ', '')) = LOWER(REPLACE($1, ' ', ''))
         `;
         const { rows } = await db.query(queryText, [licensePlate.trim()]);
 
@@ -43,7 +45,8 @@ router.get('/verify/:licensePlate', async (req, res) => {
                 licensePlate: vehicle.license_plate,
                 vehicleType: vehicle.vehicle_type,
                 ulNd: vehicle.ul_nd,
-                ulPln: vehicle.ul_pln
+                ulPln: vehicle.ul_pln,
+                adminWhatsapp: vehicle.admin_whatsapp // Data dinamis dari database
             }
         });
 
