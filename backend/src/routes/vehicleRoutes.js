@@ -33,6 +33,13 @@ router.get('/verify/:licensePlate', async (req, res) => {
 
         const vehicle = rows[0];
 
+        // LOG UNTUK DEBUGGING (Cek di Log Render)
+        console.log(`[DEBUG_ADMIN] Plat: ${vehicle.license_plate}, Unit(ul_nd): '${vehicle.ul_nd}', Wilayah(ul_pln): '${vehicle.ul_pln}'`);
+
+        // Cek isi tabel region_contacts untuk perbandingan
+        const allContacts = await db.query('SELECT ul_nd FROM region_contacts');
+        console.log(`[DEBUG_ADMIN] Daftar Region di DB:`, allContacts.rows.map(r => `'${r.ul_nd}'`).join(', '));
+
         if (!vehicle.is_active) {
             return res.status(400).json({
                 success: false,
