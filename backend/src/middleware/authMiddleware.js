@@ -80,11 +80,26 @@ const authenticate = async (req, res, next) => {
             const fullName = req.query.full_name || firebaseDecoded.name || firebaseDecoded.email.split('@')[0];
             const whatsappNumber = req.query.whatsapp_number || null;
 
-            const dbUser = await userRepository.findOrCreateFirebaseUser({
-              email: firebaseDecoded.email,
-              fullName: fullName,
-              whatsappNumber: whatsappNumber
-            });
+            // --- PERUBAHAN: Aturan Registrasi Google/Firebase ---
+            // Cek apakah user sudah ada di database lokal
+            let dbUser = await userRepository.findByEmail(firebaseDecoded.email);
+
+            if (!dbUser) {
+              // Jika user TIDAK ditemukan di DB, kita hanya izinkan pembuatan akun
+              // JIKA ada parameter whatsapp_number (berarti sedang dalam flow Registrasi)
+              if (whatsappNumber) {
+                dbUser = await userRepository.findOrCreateFirebaseUser({
+                  email: firebaseDecoded.email,
+                  fullName: fullName,
+                  whatsappNumber: whatsappNumber
+                });
+              } else {
+                // Jika tidak ada whatsapp_number, berarti ini Login Google tanpa registrasi
+                const error = new Error('Akun Google ini belum terdaftar di sistem. Silakan registrasi terlebih dahulu di aplikasi.');
+                error.statusCode = 404;
+                throw error;
+              }
+            }
 
             if (!dbUser.is_active) {
               const error = new Error('Akun Anda telah dinonaktifkan oleh Administrator');
