@@ -204,17 +204,21 @@ class FuelTransactionService {
 
       // --- TABLE ROWS ---
       let y = tableTop + 20;
-      transactions.forEach((tx, i) => {
-        if (y > 700) { doc.addPage(); y = 50; }
-        doc.font('Helvetica').fontSize(8);
-        doc.text(i + 1, 30, y);
-        doc.text(new Date(tx.created_at).toLocaleDateString('id-ID'), 50, y);
-        doc.text(tx.license_plate, 100, y);
-        doc.text(`${tx.odometer} Km`, 160, y);
-        doc.text(`${tx.fuel_amount} L`, 230, y);
-        doc.text(`Rp ${Number(tx.total_cost).toLocaleString('id-ID')}`, 300, y);
-        y += 15;
-      });
+      if (transactions.length === 0) {
+        doc.font('Helvetica-Oblique').text('Tidak ditemukan data transaksi untuk periode dan filter ini.', 30, y);
+      } else {
+        transactions.forEach((tx, i) => {
+          if (y > 700) { doc.addPage(); y = 50; }
+          doc.font('Helvetica').fontSize(8);
+          doc.text(i + 1, 30, y);
+          doc.text(new Date(tx.created_at).toLocaleDateString('id-ID'), 50, y);
+          doc.text(tx.license_plate, 100, y);
+          doc.text(`${tx.odometer} Km`, 160, y);
+          doc.text(`${tx.fuel_amount} L`, 230, y);
+          doc.text(`Rp ${Number(tx.total_cost).toLocaleString('id-ID')}`, 300, y);
+          y += 15;
+        });
+      }
 
       // --- ATTACHMENTS (New Page) ---
       doc.addPage();

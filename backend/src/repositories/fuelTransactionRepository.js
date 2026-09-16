@@ -158,19 +158,38 @@ class FuelTransactionRepository {
 
   async findAllForExport({ vehicle_id, ul_nd, start_date, end_date, status }) {
     let query = `
-      SELECT ft.*, v.license_plate, v.vehicle_type
+      SELECT ft.*, v.license_plate, v.vehicle_type, u.full_name as driver_name
       FROM fuel_transactions ft
       JOIN vehicles v ON ft.vehicle_id = v.id
+      JOIN users u ON ft.driver_id = u.id
       WHERE 1=1
     `;
     const values = [];
     let paramIndex = 1;
 
-    if (vehicle_id) { query += ` AND ft.vehicle_id = $${paramIndex}`; values.push(vehicle_id); paramIndex++; }
-    if (ul_nd) { query += ` AND v.ul_nd ILIKE $${paramIndex}`; values.push(`%${ul_nd.replace('Unit Layanan ', '').trim()}%`); paramIndex++; }
-    if (start_date) { query += ` AND ft.created_at >= $${paramIndex}`; values.push(start_date); paramIndex++; }
-    if (end_date) { query += ` AND ft.created_at <= $${paramIndex}`; values.push(end_date); paramIndex++; }
-    if (status) { query += ` AND ft.status = $${paramIndex}`; values.push(status); paramIndex++; }
+    if (vehicle_id && vehicle_id !== 'ALL') {
+      query += ` AND ft.vehicle_id = $${paramIndex}`;
+      values.push(vehicle_id);
+      paramIndex++;
+    }
+
+    if (ul_nd) {
+      query += ` AND (v.ul_nd ILIKE $${paramIndex} OR v.ul_pln ILIKE $${paramIndex})`;
+      values.push(`%${ul_nd.replace('Unit Layanan ', '').trim()}%`);
+      paramIndex++;
+    }
+
+    if (start_date) {
+      query += ` AND ft.created_at >= $${paramIndex}::timestamp`;
+      values.push(`${start_date} 00:00:00`);
+      paramIndex++;
+    }
+
+    if (end_date) {
+      query += ` AND ft.created_at <= $${paramIndex}::timestamp`;
+      values.push(`${endDate || end_date} 23:59:59`);
+      paramIndex++;
+    }
 
     query += ` ORDER BY ft.created_at ASC`;
     const result = await db.query(query, values);
