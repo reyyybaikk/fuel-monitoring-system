@@ -4,18 +4,18 @@ class VehicleRepository {
   // Mengambil daftar kendaraan dengan pagination dan pencarian/filter opsional
   async findAll({ limit, offset, search, ul_nd, vehicle_type }) {
     let query = `
-      SELECT id, license_plate, vehicle_type, ul_nd, ul_pln, usage_purpose, 
-             project_name, fuel_tank_capacity, fuel_type, fuel_consumption_rate, 
-             is_active, created_at, updated_at 
-      FROM vehicles 
-      WHERE is_active = TRUE
+      SELECT v.id, v.license_plate, v.vehicle_type, v.ul_nd, v.ul_pln, v.usage_purpose,
+             v.project_name, v.fuel_tank_capacity, v.fuel_type, v.fuel_consumption_rate,
+             v.is_active, v.created_at, v.updated_at
+      FROM vehicles v
+      WHERE v.is_active = TRUE
     `;
     const values = [];
     let paramIndex = 1;
 
     // Filter pencarian berdasarkan nomor plat atau nama proyek
     if (search) {
-      query += ` AND (license_plate ILIKE $${paramIndex} OR project_name ILIKE $${paramIndex})`;
+      query += ` AND (v.license_plate ILIKE $${paramIndex} OR v.project_name ILIKE $${paramIndex})`;
       values.push(`%${search}%`);
       paramIndex++;
     }
@@ -30,13 +30,13 @@ class VehicleRepository {
 
     // Filter berdasarkan jenis kendaraan
     if (vehicle_type) {
-      query += ` AND vehicle_type = $${paramIndex}`;
+      query += ` AND v.vehicle_type = $${paramIndex}`;
       values.push(vehicle_type);
       paramIndex++;
     }
 
     // Urutkan dan tambahkan limit & offset untuk pagination
-    query += ` ORDER BY id DESC LIMIT $${paramIndex} OFFSET $${paramIndex + 1}`;
+    query += ` ORDER BY v.id DESC LIMIT $${paramIndex} OFFSET $${paramIndex + 1}`;
     values.push(limit, offset);
 
     const result = await db.query(query, values);
@@ -45,24 +45,25 @@ class VehicleRepository {
 
   // Menghitung total data untuk keperluan pagination metadata
   async countAll({ search, ul_nd, vehicle_type }) {
-    let query = `SELECT COUNT(*) FROM vehicles WHERE is_active = TRUE`;
+    let query = `SELECT COUNT(*) FROM vehicles v WHERE v.is_active = TRUE`;
     const values = [];
     let paramIndex = 1;
 
     if (search) {
-      query += ` AND (license_plate ILIKE $${paramIndex} OR project_name ILIKE $${paramIndex})`;
+      query += ` AND (v.license_plate ILIKE $${paramIndex} OR v.project_name ILIKE $${paramIndex})`;
       values.push(`%${search}%`);
       paramIndex++;
     }
 
     if (ul_nd) {
-      query += ` AND ul_nd = $${paramIndex}`;
-      values.push(ul_nd);
+      const searchPattern = `%${ul_nd.replace('Unit Layanan ', '').trim()}%`;
+      query += ` AND (v.ul_nd ILIKE $${paramIndex} OR v.ul_pln ILIKE $${paramIndex})`;
+      values.push(searchPattern);
       paramIndex++;
     }
 
     if (vehicle_type) {
-      query += ` AND vehicle_type = $${paramIndex}`;
+      query += ` AND v.vehicle_type = $${paramIndex}`;
       values.push(vehicle_type);
       paramIndex++;
     }
