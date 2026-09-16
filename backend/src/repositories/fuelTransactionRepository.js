@@ -187,7 +187,7 @@ class FuelTransactionRepository {
 
     if (end_date) {
       query += ` AND ft.created_at <= $${paramIndex}::timestamp`;
-      values.push(`${endDate || end_date} 23:59:59`);
+      values.push(`${end_date} 23:59:59`);
       paramIndex++;
     }
 
