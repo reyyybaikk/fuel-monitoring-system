@@ -104,7 +104,7 @@ class FuelTransactionRepository {
     return result.rows[0];
   }
 
-  async findAll({ limit, offset, vehicle_id, driver_id, status, fuel_type, is_anomaly, role, userId }) {
+  async findAll({ limit, offset, vehicle_id, driver_id, status, fuel_type, is_anomaly, start_date, end_date, role, userId }) {
     let query = `
       SELECT ft.id, ft.vehicle_id, v.license_plate, v.vehicle_type, v.ul_nd as region, ft.driver_id, u.full_name as driver_name, 
              ft.filling_source, ft.fuel_type, ft.fuel_amount, ft.odometer, ft.total_cost, 
@@ -135,9 +135,14 @@ class FuelTransactionRepository {
       paramIndex++;
     }
 
-    if (vehicle_id) { query += ` AND ft.vehicle_id = $${paramIndex}`; values.push(vehicle_id); paramIndex++; }
+    if (vehicle_id && vehicle_id !== 'ALL') { query += ` AND ft.vehicle_id = $${paramIndex}`; values.push(vehicle_id); paramIndex++; }
     if (status) { query += ` AND ft.status = $${paramIndex}`; values.push(status); paramIndex++; }
     if (fuel_type) { query += ` AND ft.fuel_type = $${paramIndex}`; values.push(fuel_type); paramIndex++; }
+
+    // Filter Tanggal
+    if (start_date) { query += ` AND ft.created_at >= $${paramIndex}`; values.push(start_date); paramIndex++; }
+    if (end_date) { query += ` AND ft.created_at <= $${paramIndex}::timestamp + interval '1 day' - interval '1 second'`; values.push(end_date); paramIndex++; }
+
     if (is_anomaly !== undefined && is_anomaly !== null) {
       query += ` AND ft.ml_is_anomaly = $${paramIndex}`;
       values.push(is_anomaly === 'true' || is_anomaly === true);
@@ -147,6 +152,27 @@ class FuelTransactionRepository {
     query += ` ORDER BY ft.id DESC LIMIT $${paramIndex} OFFSET $${paramIndex + 1}`;
     values.push(limit, offset);
 
+    const result = await db.query(query, values);
+    return result.rows;
+  }
+
+  async findAllForExport({ vehicle_id, ul_nd, start_date, end_date, status }) {
+    let query = `
+      SELECT ft.*, v.license_plate, v.vehicle_type
+      FROM fuel_transactions ft
+      JOIN vehicles v ON ft.vehicle_id = v.id
+      WHERE 1=1
+    `;
+    const values = [];
+    let paramIndex = 1;
+
+    if (vehicle_id) { query += ` AND ft.vehicle_id = $${paramIndex}`; values.push(vehicle_id); paramIndex++; }
+    if (ul_nd) { query += ` AND v.ul_nd ILIKE $${paramIndex}`; values.push(`%${ul_nd.replace('Unit Layanan ', '').trim()}%`); paramIndex++; }
+    if (start_date) { query += ` AND ft.created_at >= $${paramIndex}`; values.push(start_date); paramIndex++; }
+    if (end_date) { query += ` AND ft.created_at <= $${paramIndex}`; values.push(end_date); paramIndex++; }
+    if (status) { query += ` AND ft.status = $${paramIndex}`; values.push(status); paramIndex++; }
+
+    query += ` ORDER BY ft.created_at ASC`;
     const result = await db.query(query, values);
     return result.rows;
   }

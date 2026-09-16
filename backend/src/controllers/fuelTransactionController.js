@@ -126,6 +126,21 @@ class FuelTransactionController {
       next(error);
     }
   };
+
+  // 8. Export PDF (New)
+  exportPdf = async (req, res, next) => {
+    try {
+      const pdfBuffer = await fuelTransactionService.generatePdfReport(req.query, req.user);
+      res.set({
+        'Content-Type': 'application/pdf',
+        'Content-Disposition': 'attachment; filename=Laporan_Audit_BBM.pdf',
+        'Content-Length': pdfBuffer.length,
+      });
+      res.send(pdfBuffer);
+    } catch (error) {
+      next(error);
+    }
+  };
 }
 
 module.exports = new FuelTransactionController();

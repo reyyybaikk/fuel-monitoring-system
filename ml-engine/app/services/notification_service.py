@@ -5,44 +5,63 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-FONNTE_API_URL = "https://api.fonnte.com/send"
-WA_API_KEY = os.getenv("WA_API_KEY", "")
-WA_ADMIN_PHONE = os.getenv("WA_ADMIN_PHONE", "")
+# Konfigurasi WHACenter (WhatsApp Gateway Berbayar)
+WHACENTER_API_URL = "https://app.whacenter.com/api/send"
+WA_DEVICE_ID = os.getenv("WA_DEVICE_ID", "")
+WA_SUPER_ADMIN_PHONE = os.getenv("WA_ADMIN_PHONE", "") # Fallback jika admin wilayah tidak ada
 
 def send_anomaly_notification(transaction: dict, inference_result: dict) -> bool:
     """
-    Mengirim notifikasi WhatsApp ke Admin DAN Driver jika anomali terdeteksi.
+    Mengirim notifikasi WhatsApp ke Admin Wilayah (berdasarkan UL)
+    jika anomali terdeteksi.
     """
-    if not WA_API_KEY:
-        print("[WA] API Key belum ada.")
+    if not WA_DEVICE_ID:
+        print("[WA] WHACenter Device ID belum ada di .env.")
         return False
 
     message = _format_anomaly_message(transaction, inference_result)
 
-    # 1. Kirim ke Admin
-    admin_success = _send_to_target(WA_ADMIN_PHONE, message)
+    # 1. Tentukan Target Admin (Utamakan Admin Wilayah / UL)
+    admin_target = transaction.get("regional_admin_phone") or WA_SUPER_ADMIN_PHONE
 
-    # 2. Kirim ke Driver
-    driver_phone = transaction.get("driver_whatsapp")
-    driver_success = False
-    if driver_phone:
-        driver_message = f"Halo *{transaction.get('driver_name')}*,\n\nTerdeteksi pemborosan penggunaan BBM pada kendaraan {transaction.get('license_plate')}.\n\n{inference_result.get('notes')}\n\nMohon gunakan BBM secara bijak sesuai standar perusahaan."
-        driver_success = _send_to_target(driver_phone, driver_message)
+    admin_success = False
+    if admin_target:
+        print(f"[WA] Mengirim notifikasi ke Admin Wilayah: {admin_target} (UL: {transaction.get('ul_nd')})")
+        admin_success = _send_to_target(admin_target, message)
+    else:
+        print("[WA Warning] Tidak ada nomor Admin Wilayah maupun Super Admin untuk dikirimi notifikasi.")
 
-    return admin_success or driver_success
+    return admin_success
 
 def _send_to_target(target: str, message: str) -> bool:
+    """
+    Fungsi internal untuk mengirim pesan via WHACenter API.
+    """
     if not target: return False
     try:
+        # WHACenter menggunakan parameter device_id, number, dan message
+        payload = {
+            "device_id": WA_DEVICE_ID,
+            "number": target,
+            "message": message
+        }
+
         response = requests.post(
-            FONNTE_API_URL,
-            headers={"Authorization": WA_API_KEY},
-            data={"target": target, "message": message, "countryCode": "62"},
-            timeout=10
+            WHACENTER_API_URL,
+            data=payload,
+            timeout=15
         )
-        return response.status_code == 200
+
+        result_json = response.json()
+        if result_json.get("status") is True:
+            print(f"[WA Success] Pesan terkirim ke {target}.")
+            return True
+        else:
+            print(f"[WA Failed] Gagal kirim ke {target}: {result_json.get('message')}")
+            return False
+
     except Exception as e:
-        print(f"[WA Error] Gagal kirim ke {target}: {e}")
+        print(f"[WA Error] Kesalahan koneksi WHACenter ke {target}: {e}")
         return False
 
 def _format_anomaly_message(transaction: dict, inference_result: dict) -> str:
