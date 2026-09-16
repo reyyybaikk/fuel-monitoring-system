@@ -159,6 +159,84 @@ class FuelTransactionService {
   async getSummary() {
     return await fuelTransactionRepository.getSummary();
   }
+
+  async generatePdfReport(query, user) {
+    const PDFDocument = require('pdfkit');
+    const axios = require('axios');
+
+    // 1. Fetch Data
+    const filters = {
+      vehicle_id: query.vehicle_id === 'ALL' ? null : query.vehicle_id,
+      ul_nd: user.region || null,
+      start_date: query.start_date,
+      end_date: query.end_date,
+      status: 'APPROVED' // Biasanya hanya yang disetujui yang masuk laporan resmi
+    };
+
+    const transactions = await fuelTransactionRepository.findAllForExport(filters);
+    const vehicle = filters.vehicle_id ? await vehicleRepository.findById(filters.vehicle_id) : null;
+
+    return new Promise((resolve, reject) => {
+      const doc = new PDFDocument({ margin: 30, size: 'A4' });
+      let buffers = [];
+      doc.on('data', buffers.push.bind(buffers));
+      doc.on('end', () => resolve(Buffer.concat(buffers)));
+
+      // --- HEADER ---
+      doc.fontSize(14).font('Helvetica-Bold').text('BERITA ACARA MONITORING BBM', { align: 'center' });
+      doc.moveDown();
+      doc.fontSize(10).font('Helvetica');
+      doc.text(`Unit Layanan: ${user.region || 'UPKAL2 REGIONAL'}`);
+      doc.text(`Periode Audit: ${query.start_date} s/d ${query.end_date}`);
+      doc.text(`Model Kendaraan: ${vehicle ? `${vehicle.license_plate} - ${vehicle.vehicle_type}` : 'Seluruh Armada'}`);
+      doc.moveDown();
+
+      // --- TABLE HEADER ---
+      const tableTop = 150;
+      doc.font('Helvetica-Bold').fontSize(8);
+      doc.text('No', 30, tableTop);
+      doc.text('Tanggal', 50, tableTop);
+      doc.text('Pelat', 100, tableTop);
+      doc.text('Odometer', 160, tableTop);
+      doc.text('Liter', 230, tableTop);
+      doc.text('Rupiah', 300, tableTop);
+      doc.moveTo(30, tableTop + 12).lineTo(550, tableTop + 12).stroke();
+
+      // --- TABLE ROWS ---
+      let y = tableTop + 20;
+      transactions.forEach((tx, i) => {
+        if (y > 700) { doc.addPage(); y = 50; }
+        doc.font('Helvetica').fontSize(8);
+        doc.text(i + 1, 30, y);
+        doc.text(new Date(tx.created_at).toLocaleDateString('id-ID'), 50, y);
+        doc.text(tx.license_plate, 100, y);
+        doc.text(`${tx.odometer} Km`, 160, y);
+        doc.text(`${tx.fuel_amount} L`, 230, y);
+        doc.text(`Rp ${Number(tx.total_cost).toLocaleString('id-ID')}`, 300, y);
+        y += 15;
+      });
+
+      // --- ATTACHMENTS (New Page) ---
+      doc.addPage();
+      doc.fontSize(12).font('Helvetica-Bold').text('LAMPIRAN BUKTI FISIK', { align: 'left' });
+      doc.moveDown();
+
+      // Logic to fetch and embed images (simplified for now to avoid long timeouts)
+      doc.fontSize(10).text('Bukti visual tersedia di sistem FuelGuard AI Cloud.');
+
+      // --- SIGNATURE ---
+      const footerY = 700;
+      doc.fontSize(10).text('Mengetahui,', 50, footerY);
+      doc.text('Manajer Unit Layanan', 50, footerY + 12);
+      doc.text('( ............................ )', 50, footerY + 70);
+
+      doc.text('Dibuat Oleh,', 400, footerY);
+      doc.text('Admin Pengawas', 400, footerY + 12);
+      doc.text(user.full_name || 'Admin', 400, footerY + 70);
+
+      doc.end();
+    });
+  }
 }
 
 module.exports = new FuelTransactionService();
