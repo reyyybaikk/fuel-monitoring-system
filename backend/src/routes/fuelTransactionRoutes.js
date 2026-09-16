@@ -11,6 +11,7 @@ router.use(authenticate);
 router.get('/analytics', authorize('ADMIN', 'MANAGER'), fuelTransactionController.getAnalytics);
 router.get('/summary', authorize('ADMIN', 'MANAGER'), fuelTransactionController.getSummary);
 router.get('/export-pdf', authorize('ADMIN', 'MANAGER'), fuelTransactionController.exportPdf);
+router.get('/export-pdf-preview', authorize('ADMIN', 'MANAGER'), fuelTransactionController.exportPdfPreview);
 
 // 2. DRIVER: Membuat transaksi (Menerima multipart/form-data)
 router.post(

@@ -160,6 +160,16 @@ class FuelTransactionService {
     return await fuelTransactionRepository.getSummary();
   }
 
+  async getExportPreview(query, user) {
+    const filters = {
+      vehicle_id: query.vehicle_id === 'ALL' ? null : query.vehicle_id,
+      ul_nd: user.region || null,
+      start_date: query.start_date,
+      end_date: query.end_date
+    };
+    return await fuelTransactionRepository.findAllForExport(filters);
+  }
+
   async generatePdfReport(query, user) {
     const PDFDocument = require('pdfkit');
     const axios = require('axios');
