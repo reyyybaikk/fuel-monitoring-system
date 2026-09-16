@@ -36,7 +36,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <html lang="id" className="h-full" suppressHydrationWarning>
         <body className="h-full bg-[#e6f4f8] text-[#0b1c30] antialiased" suppressHydrationWarning>
           <QueryClientProvider client={queryClient}>
-            {children}
+            {mounted ? children : <div className="min-h-screen bg-[#e6f4f8]" />}
           </QueryClientProvider>
         </body>
       </html>

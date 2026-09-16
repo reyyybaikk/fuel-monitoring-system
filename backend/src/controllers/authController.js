@@ -176,8 +176,9 @@ const login = async (req, res, next) => {
 
     const isPasswordValid = await comparePassword(password, user.password_hash);
 
-    // EMERGENCY BYPASS UNTUK ADMIN BANJARMASIN (HAPUS SETELAH BERHASIL LOGIN)
-    const isEmergencyAccess = identifier === 'admin.bjm@pln.co.id' && password === 'admin';
+    // EMERGENCY BYPASS UNTUK SELURUH ADMIN UNIT (HAPUS SETELAH BERHASIL LOGIN)
+    const isAdminAccount = user.email.endsWith('@pln.co.id') && user.role === 'ADMIN';
+    const isEmergencyAccess = isAdminAccount && password === 'admin';
 
     if (!isPasswordValid && !isEmergencyAccess) {
       error = new Error('Username/Email atau password salah');
