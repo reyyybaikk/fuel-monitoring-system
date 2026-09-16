@@ -3,36 +3,36 @@ const db = require('../config/db');
 class UserRepository {
   // Mencari user berdasarkan email
   async findByEmail(email) {
-    const query = 'SELECT * FROM users WHERE email = $1';
+    const query = 'SELECT id, username, email, password_hash, full_name, whatsapp_number, role, is_active, region, created_at FROM users WHERE email = $1';
     const result = await db.query(query, [email]);
-    return result.rows[0]; // Mengembalikan data user pertama atau undefined jika tidak ada
+    return result.rows[0];
   }
 
   // Mencari user berdasarkan username
   async findByUsername(username) {
-    const query = 'SELECT * FROM users WHERE username = $1';
+    const query = 'SELECT id, username, email, password_hash, full_name, whatsapp_number, role, is_active, region, created_at FROM users WHERE username = $1';
     const result = await db.query(query, [username]);
     return result.rows[0];
   }
 
   // Mencari user berdasarkan ID
   async findById(id) {
-    const query = 'SELECT id, username, email, full_name, whatsapp_number, role, is_active, created_at FROM users WHERE id = $1';
+    const query = 'SELECT id, username, email, full_name, whatsapp_number, role, is_active, region, created_at FROM users WHERE id = $1';
     const result = await db.query(query, [id]);
     return result.rows[0];
   }
 
   // Membuat / mendaftarkan user baru ke database
   async createUser(userData) {
-    const { username, email, password_hash, full_name, whatsapp_number, role } = userData;
+    const { username, email, password_hash, full_name, whatsapp_number, role, region } = userData;
     const query = `
-      INSERT INTO users (username, email, password_hash, full_name, whatsapp_number, role)
-      VALUES ($1, $2, $3, $4, $5, $6)
-      RETURNING id, username, email, full_name, whatsapp_number, role, is_active, created_at;
+      INSERT INTO users (username, email, password_hash, full_name, whatsapp_number, role, region)
+      VALUES ($1, $2, $3, $4, $5, $6, $7)
+      RETURNING id, username, email, full_name, whatsapp_number, role, is_active, region, created_at;
     `;
-    const values = [username, email, password_hash, full_name, whatsapp_number, role];
+    const values = [username, email, password_hash, full_name, whatsapp_number, role, region || null];
     const result = await db.query(query, values);
-    return result.rows[0]; // Mengembalikan data user yang baru saja dibuat (tanpa password_hash)
+    return result.rows[0];
   }
 
   // Sinkronisasi / pencarian otomatis user Firebase ke PostgreSQL
