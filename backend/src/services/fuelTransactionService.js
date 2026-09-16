@@ -169,76 +169,122 @@ class FuelTransactionService {
       vehicle_id: query.vehicle_id === 'ALL' ? null : query.vehicle_id,
       ul_nd: user.region || null,
       start_date: query.start_date,
-      end_date: query.end_date,
-      status: 'APPROVED' // Biasanya hanya yang disetujui yang masuk laporan resmi
+      end_date: query.end_date
+      // status: 'APPROVED' // Dihapus sementara agar semua data muncul untuk pengetesan
     };
 
     const transactions = await fuelTransactionRepository.findAllForExport(filters);
     const vehicle = filters.vehicle_id ? await vehicleRepository.findById(filters.vehicle_id) : null;
 
-    return new Promise((resolve, reject) => {
-      const doc = new PDFDocument({ margin: 30, size: 'A4' });
-      let buffers = [];
-      doc.on('data', buffers.push.bind(buffers));
-      doc.on('end', () => resolve(Buffer.concat(buffers)));
+    return new Promise(async (resolve, reject) => {
+      try {
+        const doc = new PDFDocument({ margin: 30, size: 'A4' });
+        let buffers = [];
+        doc.on('data', buffers.push.bind(buffers));
+        doc.on('end', () => resolve(Buffer.concat(buffers)));
 
-      // --- HEADER ---
-      doc.fontSize(14).font('Helvetica-Bold').text('BERITA ACARA MONITORING BBM', { align: 'center' });
-      doc.moveDown();
-      doc.fontSize(10).font('Helvetica');
-      doc.text(`Unit Layanan: ${user.region || 'UPKAL2 REGIONAL'}`);
-      doc.text(`Periode Audit: ${query.start_date} s/d ${query.end_date}`);
-      doc.text(`Model Kendaraan: ${vehicle ? `${vehicle.license_plate} - ${vehicle.vehicle_type}` : 'Seluruh Armada'}`);
-      doc.moveDown();
+        // --- HEADER ---
+        doc.fontSize(16).font('Helvetica-Bold').text('BERITA ACARA MONITORING BBM', { align: 'center' });
+        doc.moveDown(0.5);
+        doc.fontSize(10).font('Helvetica');
+        doc.text(`Unit Layanan   : ${user.region || 'UPKAL2 REGIONAL'}`);
+        doc.text(`Periode Audit  : ${query.start_date} s/d ${query.end_date}`);
+        doc.text(`Model Armada   : ${vehicle ? `${vehicle.license_plate} - ${vehicle.vehicle_type}` : 'Seluruh Armada'}`);
+        doc.moveDown();
 
-      // --- TABLE HEADER ---
-      const tableTop = 150;
-      doc.font('Helvetica-Bold').fontSize(8);
-      doc.text('No', 30, tableTop);
-      doc.text('Tanggal', 50, tableTop);
-      doc.text('Pelat', 100, tableTop);
-      doc.text('Odometer', 160, tableTop);
-      doc.text('Liter', 230, tableTop);
-      doc.text('Rupiah', 300, tableTop);
-      doc.moveTo(30, tableTop + 12).lineTo(550, tableTop + 12).stroke();
+        // --- TABLE HEADER ---
+        const tableTop = 140;
+        doc.font('Helvetica-Bold').fontSize(8);
+        doc.text('No', 30, tableTop);
+        doc.text('Tanggal', 50, tableTop);
+        doc.text('No. Pol', 100, tableTop);
+        doc.text('Odometer', 160, tableTop);
+        doc.text('Liter', 230, tableTop);
+        doc.text('Total Rupiah', 300, tableTop);
+        doc.moveTo(30, tableTop + 12).lineTo(565, tableTop + 12).stroke();
 
-      // --- TABLE ROWS ---
-      let y = tableTop + 20;
-      if (transactions.length === 0) {
-        doc.font('Helvetica-Oblique').text('Tidak ditemukan data transaksi untuk periode dan filter ini.', 30, y);
-      } else {
-        transactions.forEach((tx, i) => {
-          if (y > 700) { doc.addPage(); y = 50; }
-          doc.font('Helvetica').fontSize(8);
-          doc.text(i + 1, 30, y);
-          doc.text(new Date(tx.created_at).toLocaleDateString('id-ID'), 50, y);
-          doc.text(tx.license_plate, 100, y);
-          doc.text(`${tx.odometer} Km`, 160, y);
-          doc.text(`${tx.fuel_amount} L`, 230, y);
-          doc.text(`Rp ${Number(tx.total_cost).toLocaleString('id-ID')}`, 300, y);
-          y += 15;
-        });
+        // --- TABLE ROWS ---
+        let y = tableTop + 20;
+        if (transactions.length === 0) {
+          doc.font('Helvetica-Oblique').text('Tidak ditemukan data transaksi untuk periode ini.', 30, y);
+        } else {
+          transactions.forEach((tx, i) => {
+            if (y > 750) { doc.addPage(); y = 50; }
+            doc.font('Helvetica').fontSize(8);
+            doc.text(i + 1, 30, y);
+            doc.text(new Date(tx.created_at).toLocaleDateString('id-ID'), 50, y);
+            doc.text(tx.license_plate, 100, y);
+            doc.text(`${tx.odometer} Km`, 160, y);
+            doc.text(`${tx.fuel_amount} L`, 230, y);
+            doc.text(`Rp ${Number(tx.total_cost).toLocaleString('id-ID')}`, 300, y);
+            y += 15;
+          });
+        }
+
+        // --- LAMPIRAN BUKTI FISIK (New Page) ---
+        if (transactions.length > 0) {
+          doc.addPage();
+          doc.fontSize(12).font('Helvetica-Bold').text('LAMPIRAN BUKTI FISIK TRANSAKSI', { align: 'left' });
+          doc.moveDown();
+
+          for (const [index, tx] of transactions.entries()) {
+            // Cek sisa halaman, jika tidak cukup buat halaman baru
+            if (doc.y > 600) doc.addPage();
+
+            doc.fontSize(10).font('Helvetica-Bold').text(`TRANSAKSI #${tx.id} - ${tx.license_plate} (${new Date(tx.created_at).toLocaleDateString('id-ID')})`);
+            doc.moveDown(0.5);
+
+            const imageWidth = 170;
+            const startX = 30;
+            const currentY = doc.y;
+
+            const photoTypes = [
+              { key: 'odometer_photo_path', label: '1. Odo Sebelum' },
+              { key: 'odometer_after_photo_path', label: '2. Odo Sesudah' },
+              { key: 'receipt_photo_path', label: '3. Nota / Struk' }
+            ];
+
+            for (let i = 0; i < photoTypes.length; i++) {
+              const photo = photoTypes[i];
+              const xPos = startX + (i * (imageWidth + 10));
+
+              doc.fontSize(7).font('Helvetica-Bold').text(photo.label, xPos, currentY, { width: imageWidth, align: 'center' });
+
+              const imgPath = tx[photo.key];
+              if (imgPath) {
+                try {
+                  // Construct Supabase URL
+                  const imgUrl = `https://jgqpxhoyqrfvspmpopqa.supabase.co/storage/v1/object/public/fuel-proofs/${imgPath}`;
+                  const response = await axios.get(imgUrl, { responseType: 'arraybuffer' });
+                  doc.image(response.data, xPos, currentY + 12, { width: imageWidth, height: 120 });
+                } catch (err) {
+                  doc.fontSize(7).font('Helvetica-Oblique').text('[Gagal memuat gambar]', xPos, currentY + 50, { width: imageWidth, align: 'center' });
+                }
+              } else {
+                doc.fontSize(7).font('Helvetica-Oblique').text('[Tidak ada foto]', xPos, currentY + 50, { width: imageWidth, align: 'center' });
+              }
+            }
+
+            doc.moveDown(18); // Beri jarak antar baris transaksi (120px height + margin)
+          }
+        }
+
+        // --- SIGNATURE ---
+        if (doc.y > 700) doc.addPage();
+        const footerY = doc.y + 50;
+        doc.fontSize(10).font('Helvetica-Bold');
+        doc.text('Mengetahui,', 50, footerY);
+        doc.text('Manajer Unit Layanan', 50, footerY + 12);
+        doc.text('( ............................ )', 50, footerY + 70);
+
+        doc.text('Dibuat Oleh,', 400, footerY);
+        doc.text('Admin Pengawas', 400, footerY + 12);
+        doc.text(user.full_name || 'Admin', 400, footerY + 70);
+
+        doc.end();
+      } catch (err) {
+        reject(err);
       }
-
-      // --- ATTACHMENTS (New Page) ---
-      doc.addPage();
-      doc.fontSize(12).font('Helvetica-Bold').text('LAMPIRAN BUKTI FISIK', { align: 'left' });
-      doc.moveDown();
-
-      // Logic to fetch and embed images (simplified for now to avoid long timeouts)
-      doc.fontSize(10).text('Bukti visual tersedia di sistem FuelGuard AI Cloud.');
-
-      // --- SIGNATURE ---
-      const footerY = 700;
-      doc.fontSize(10).text('Mengetahui,', 50, footerY);
-      doc.text('Manajer Unit Layanan', 50, footerY + 12);
-      doc.text('( ............................ )', 50, footerY + 70);
-
-      doc.text('Dibuat Oleh,', 400, footerY);
-      doc.text('Admin Pengawas', 400, footerY + 12);
-      doc.text(user.full_name || 'Admin', 400, footerY + 70);
-
-      doc.end();
     });
   }
 }
