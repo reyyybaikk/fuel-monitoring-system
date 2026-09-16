@@ -217,6 +217,72 @@ class FuelTransactionRepository {
     const result = await db.query(query, [status, id]);
     return result.rows[0];
   }
+
+  async getSummary() {
+    const statsQuery = `
+      SELECT
+        SUM(fuel_amount) as total_liters,
+        SUM(total_cost) as total_cost,
+        COUNT(CASE WHEN ml_is_anomaly = TRUE THEN 1 END) as anomaly_count
+      FROM fuel_transactions
+    `;
+    const vehicleQuery = `
+      SELECT
+        COUNT(*) as total_vehicles,
+        COUNT(CASE WHEN is_active = TRUE THEN 1 END) as active_vehicles
+      FROM vehicles
+    `;
+    const recentAnomaliesQuery = `
+      SELECT ft.id, v.license_plate as plate, ft.ml_anomaly_score as score, ft.notes
+      FROM fuel_transactions ft
+      JOIN vehicles v ON ft.vehicle_id = v.id
+      WHERE ft.ml_is_anomaly = TRUE
+      ORDER BY ft.created_at DESC
+      LIMIT 5
+    `;
+
+    const [statsRes, vehicleRes, anomaliesRes] = await Promise.all([
+      db.query(statsQuery),
+      db.query(vehicleQuery),
+      db.query(recentAnomaliesQuery)
+    ]);
+
+    const stats = statsRes.rows[0];
+    const vehicles = vehicleRes.rows[0];
+
+    return {
+      total_liters: parseFloat(stats.total_liters) || 0,
+      total_cost: parseFloat(stats.total_cost) || 0,
+      anomaly_count: parseInt(stats.anomaly_count, 10) || 0,
+      total_vehicles: parseInt(vehicles.total_vehicles, 10) || 0,
+      active_vehicles: parseInt(vehicles.active_vehicles, 10) || 0,
+      liter_change_percentage: 4.2, // Placeholder default
+      cost_change_percentage: -1.8, // Placeholder default
+      recent_anomalies: anomaliesRes.rows
+    };
+  }
+
+  async getAnalytics(start, end) {
+    let query = `
+      SELECT
+        TO_CHAR(created_at, 'Dy') as day,
+        SUM(fuel_amount) as value,
+        BOOL_OR(ml_is_anomaly) as is_anomaly
+      FROM fuel_transactions
+      WHERE 1=1
+    `;
+    const values = [];
+    if (start && end) {
+      query += ` AND created_at BETWEEN $1 AND $2`;
+      values.push(start, end);
+    }
+    query += ` GROUP BY TO_CHAR(created_at, 'Dy'), DATE_TRUNC('day', created_at)
+               ORDER BY DATE_TRUNC('day', created_at) ASC
+               LIMIT 7`;
+
+    const result = await db.query(query, values);
+    return result.rows;
+  }
 }
 
 module.exports = new FuelTransactionRepository();
