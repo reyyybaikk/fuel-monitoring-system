@@ -141,6 +141,19 @@ class FuelTransactionController {
       next(error);
     }
   };
+
+  // 9. Export PDF Preview (New)
+  exportPdfPreview = async (req, res, next) => {
+    try {
+      const result = await fuelTransactionService.getExportPreview(req.query, req.user);
+      res.status(200).json({
+        success: true,
+        data: result
+      });
+    } catch (error) {
+      next(error);
+    }
+  };
 }
 
 module.exports = new FuelTransactionController();
