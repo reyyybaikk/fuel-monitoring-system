@@ -158,12 +158,7 @@ const login = async (req, res, next) => {
     }
 
     if (!user) {
-      // DEBUG: Lihat daftar user yang ada jika gagal login
-      const allUsers = await db.query('SELECT email FROM users LIMIT 10');
-      const emails = allUsers.rows.map(u => u.email).join(', ');
-      console.log(`[DEBUG_LOGIN] User tidak ditemukan: ${identifier}. Tersedia: ${emails}`);
-
-      error = new Error(`Username/Email tidak ditemukan. Terdaftar: ${emails}`);
+      error = new Error('Username/Email atau password salah');
       error.statusCode = 401;
       throw error;
     }
@@ -175,12 +170,7 @@ const login = async (req, res, next) => {
     }
 
     const isPasswordValid = await comparePassword(password, user.password_hash);
-
-    // EMERGENCY BYPASS UNTUK SELURUH ADMIN UNIT (HAPUS SETELAH BERHASIL LOGIN)
-    const isAdminAccount = user.email.endsWith('@pln.co.id') && user.role === 'ADMIN';
-    const isEmergencyAccess = isAdminAccount && password === 'admin';
-
-    if (!isPasswordValid && !isEmergencyAccess) {
+    if (!isPasswordValid) {
       error = new Error('Username/Email atau password salah');
       error.statusCode = 401;
       throw error;
