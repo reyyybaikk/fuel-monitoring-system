@@ -4,55 +4,77 @@ import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useAuthStore } from '@/store/authStore';
+import { useUIStore } from '@/store/uiStore';
 import {
-  Fuel,
   LayoutDashboard,
   Receipt,
   BarChart3,
   Truck,
-  Users,
-  Settings,
-  Cpu,
-  HelpCircle,
-  LogOut
+  LogOut,
+  ChevronLeft,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 export default function Sidebar() {
   const pathname = usePathname();
   const logoutUser = useAuthStore((state) => state.logout);
+  const { isSidebarCollapsed, toggleSidebar } = useUIStore();
 
   const menuItems = [
     { label: 'Dasbor', href: '/dashboard', icon: LayoutDashboard },
     { label: 'Transaksi', href: '/transactions', icon: Receipt, badge: '1 Baru' },
     { label: 'Laporan', href: '/reports', icon: BarChart3 },
     { label: 'Kendaraan', href: '/vehicles', icon: Truck },
-    { label: 'Pengguna', href: '/users', icon: Users },
-    { label: 'Pengaturan', href: '/pengaturan', icon: Settings },
   ];
 
   return (
-    <aside className="fixed left-0 top-0 h-screen w-64 bg-pln-darkBlue text-white z-50 flex flex-col justify-between select-none shadow-md font-sans">
+    <aside className={cn(
+      "fixed left-0 top-0 h-screen bg-pln-darkBlue text-white z-50 flex flex-col justify-between select-none shadow-md font-sans transition-all duration-300",
+      isSidebarCollapsed ? "w-20" : "w-64"
+    )}>
       <div className="flex flex-col">
-        {/* Header Logo Brand */}
-        <div className="h-16 px-4 flex items-center gap-2.5 bg-black/10 border-b border-white/5">
-          <div className="w-8 h-8 rounded-md bg-white/10 flex items-center justify-center text-white shrink-0">
-            <Fuel className="h-4 w-4" />
+        {/* Header Logo Brand - PLN NUSA DAYA UPKAL 2 */}
+        <div className={cn(
+          "h-24 px-4 flex items-center border-b border-white/10 relative transition-all duration-300",
+          isSidebarCollapsed ? "justify-center px-0" : "gap-3 bg-black/10"
+        )}>
+          <div className={cn(
+            "rounded bg-white p-1.5 flex items-center justify-center shrink-0 shadow-sm transition-all duration-300",
+            isSidebarCollapsed ? "w-10 h-10" : "w-12 h-12"
+          )}>
+            <img src="/logo-pln.png" alt="PLN" className="w-full h-auto object-contain" onError={(e) => {
+              e.currentTarget.style.display = 'none';
+              e.currentTarget.parentElement!.innerHTML = '<span class="text-pln-darkBlue font-black text-[10px] text-center">PLN</span>';
+            }} />
           </div>
-          <div className="flex flex-col min-w-0">
-            <span className="font-sans font-bold text-sm text-white tracking-tight leading-tight truncate">
-              FuelGuard AI
-            </span>
-            <span className="font-mono text-[9px] text-pln-cyan font-bold uppercase tracking-wider leading-none">
-              Audit BBM &amp; Anti-Fraud
-            </span>
-          </div>
+
+          {!isSidebarCollapsed && (
+            <div className="flex flex-col min-w-0">
+              <span className="font-sans font-black text-[11px] text-white tracking-tighter leading-tight uppercase">
+                PLN NUSA DAYA
+              </span>
+              <span className="font-sans text-[9px] text-pln-cyan font-bold uppercase tracking-tight leading-none mt-0.5">
+                Unit Pelaksana Kalimantan 2
+              </span>
+            </div>
+          )}
+
+          {/* Tombol Mekanis Buka/Tutup */}
+          <button
+            onClick={toggleSidebar}
+            className={cn(
+              "absolute -right-3 top-10 w-6 h-6 rounded-full bg-pln-cyan text-white flex items-center justify-center shadow-lg hover:scale-110 active:scale-95 transition-all z-50",
+              isSidebarCollapsed && "rotate-180"
+            )}
+          >
+            <ChevronLeft className="h-4 w-4" />
+          </button>
         </div>
 
         {/* Menu Section Kategori */}
-        <div className="px-4 pt-5 pb-1.5">
+        <div className={cn("px-4 pt-5 pb-1.5", isSidebarCollapsed && "text-center px-0")}>
           <span className="font-mono text-[10px] text-pln-iceBlue/50 uppercase tracking-widest font-bold">
-            Menu Utama
+            {isSidebarCollapsed ? "•••" : "Menu Utama"}
           </span>
         </div>
 
@@ -66,8 +88,10 @@ export default function Sidebar() {
               <Link
                 key={item.href}
                 href={item.href}
+                title={isSidebarCollapsed ? item.label : ""}
                 className={cn(
-                  "flex items-center justify-between px-3 py-2 rounded-[4px] text-xs font-medium transition-all duration-150",
+                  "flex items-center rounded-[4px] text-xs font-medium transition-all duration-150 relative group",
+                  isSidebarCollapsed ? "justify-center p-2.5 h-10" : "justify-between px-3 py-2",
                   isActive
                     ? "bg-pln-cyan text-white shadow-sm font-semibold"
                     : "text-pln-iceBlue/80 hover:bg-white/5 hover:text-white"
@@ -75,12 +99,20 @@ export default function Sidebar() {
               >
                 <div className="flex items-center gap-2.5">
                   <IconComponent className={cn("h-4 w-4 shrink-0", isActive ? "text-white" : "text-pln-iceBlue/60")} />
-                  <span className="truncate">{item.label}</span>
+                  {!isSidebarCollapsed && <span className="truncate">{item.label}</span>}
                 </div>
-                {item.badge && (
+
+                {!isSidebarCollapsed && item.badge && (
                   <span className="inline-flex items-center px-1.5 py-0.5 rounded-full font-mono text-[9px] font-bold bg-anomaly-red text-white shadow-sm">
                     {item.badge}
                   </span>
+                )}
+
+                {/* Tooltip for Collapsed State */}
+                {isSidebarCollapsed && (
+                  <div className="absolute left-14 px-2 py-1 bg-pln-darkBlue border border-white/10 rounded text-[10px] font-bold text-white whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity z-50">
+                    {item.label}
+                  </div>
                 )}
               </Link>
             );
@@ -88,32 +120,18 @@ export default function Sidebar() {
         </nav>
       </div>
 
-      {/* Footer ML Engine Status & Logout */}
+      {/* Footer Logout */}
       <div className="p-3 flex flex-col gap-2 border-t border-white/5 bg-black/5">
-        <div className="bg-white/5 border border-white/10 rounded-[6px] p-2.5">
-          <div className="flex items-center justify-between mb-1">
-            <div className="flex items-center gap-1.5">
-              <span className="relative flex h-1.5 w-1.5">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-pln-yellow opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-pln-yellow"></span>
-              </span>
-              <span className="font-mono text-[9px] text-white/90 uppercase tracking-wide font-medium">
-                Mesin ML: Aktif
-              </span>
-            </div>
-            <span className="font-mono text-[9px] text-pln-cyan font-bold">V3.2</span>
-          </div>
-          <p className="font-sans text-[10px] text-pln-iceBlue/60 leading-tight">
-            Model deteksi fraud real-time berjalan normal pada seluruh depo wilayah.
-          </p>
-        </div>
-
         <button
           onClick={() => logoutUser()}
-          className="flex items-center justify-center gap-2 py-1.5 w-full rounded-[4px] font-sans text-[11px] font-medium text-pln-iceBlue/60 hover:bg-anomaly-red/10 hover:text-anomaly-red border border-transparent hover:border-anomaly-red/20 transition-all duration-150"
+          title={isSidebarCollapsed ? "Keluar Portal" : ""}
+          className={cn(
+            "flex items-center justify-center gap-2 py-1.5 w-full rounded-[4px] font-sans text-[11px] font-medium text-pln-iceBlue/60 hover:bg-anomaly-red/10 hover:text-anomaly-red border border-transparent hover:border-anomaly-red/20 transition-all duration-150",
+            isSidebarCollapsed ? "p-2" : "px-3"
+          )}
         >
           <LogOut className="h-3.5 w-3.5" />
-          <span>Keluar Portal</span>
+          {!isSidebarCollapsed && <span>Keluar Portal</span>}
         </button>
       </div>
     </aside>

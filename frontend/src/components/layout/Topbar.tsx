@@ -3,9 +3,11 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import { useAuthStore } from '@/store/authStore';
+import { useUIStore } from '@/store/uiStore';
 import { getMe } from '@/services/authService';
 import { useQuery } from '@tanstack/react-query';
 import { Search, Bell, User, Building2, Loader2 } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 export default function Topbar() {
   const router = useRouter();
@@ -13,6 +15,7 @@ export default function Topbar() {
   const searchParams = useSearchParams();
 
   const { userProfile, login, isAuthenticated } = useAuthStore();
+  const { isSidebarCollapsed } = useUIStore();
   const [searchValue, setSearchValue] = useState(searchParams.get('q') || '');
 
   // State untuk menangani sinkronisasi Hydration
@@ -45,7 +48,10 @@ export default function Topbar() {
   // Jika belum mounted (masih di server), tampilkan bar kosong atau placeholder agar HTML cocok
   if (!mounted) {
     return (
-      <header className="fixed top-0 left-64 right-0 h-16 bg-white z-40 px-6 border-b border-border shadow-sm"></header>
+      <header className={cn(
+        "fixed top-0 right-0 h-16 bg-white z-40 px-6 border-b border-border shadow-sm transition-all duration-300",
+        isSidebarCollapsed ? "left-20" : "left-64"
+      )}></header>
     );
   }
 
@@ -62,7 +68,10 @@ export default function Topbar() {
   };
 
   return (
-    <header className="fixed top-0 left-64 right-0 h-16 bg-white z-40 px-6 flex items-center justify-between border-b border-border shadow-sm select-none font-sans">
+    <header className={cn(
+      "fixed top-0 right-0 h-16 bg-white z-40 px-6 flex items-center justify-between border-b border-border shadow-sm select-none font-sans transition-all duration-300",
+      isSidebarCollapsed ? "left-20" : "left-64"
+    )}>
       <div className="flex items-center gap-4 flex-1 max-w-xl">
         <form onSubmit={handleSearch} className="relative flex items-center w-full group">
           <div className="flex items-center gap-2 w-full px-3 py-1.5 rounded-[4px] bg-[#e6f4f8]/40 border border-border/60 text-muted-foreground focus-within:border-pln-cyan focus-within:ring-1 focus-within:ring-pln-cyan/30 focus-within:bg-white transition-all">
