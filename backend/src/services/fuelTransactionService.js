@@ -253,12 +253,22 @@ class FuelTransactionService {
               const imgPath = tx[photo.key];
               if (imgPath) {
                 try {
-                  // Construct Supabase URL
-                  const imgUrl = `https://jgqpxhoyqrfvspmpopqa.supabase.co/storage/v1/object/public/fuel-proofs/${imgPath}`;
-                  const response = await axios.get(imgUrl, { responseType: 'arraybuffer' });
+                  // Cerdas: Cek apakah imgPath sudah merupakan URL lengkap atau hanya path relatif
+                  let imgUrl = imgPath;
+                  if (!imgPath.startsWith('http')) {
+                    // Jika hanya path, gunakan bucket 'uploads' sesuai uploadService.js
+                    imgUrl = `https://jgqpxhoyqrfvspmpopqa.supabase.co/storage/v1/object/public/uploads/${imgPath}`;
+                  }
+
+                  console.log(`[PDF_EXPORT] Mencoba mengunduh gambar: ${imgUrl}`);
+                  const response = await axios.get(imgUrl, {
+                    responseType: 'arraybuffer',
+                    timeout: 5000 // Batasan waktu 5 detik agar tidak macet
+                  });
                   doc.image(response.data, xPos, currentY + 12, { width: imageWidth, height: 120 });
                 } catch (err) {
-                  doc.fontSize(7).font('Helvetica-Oblique').text('[Gagal memuat gambar]', xPos, currentY + 50, { width: imageWidth, align: 'center' });
+                  console.error(`[PDF_EXPORT_ERROR] Gagal memuat gambar ${photo.label}:`, err.message);
+                  doc.fontSize(7).fillColor('red').font('Helvetica-Oblique').text('[Gagal memuat gambar]', xPos, currentY + 50, { width: imageWidth, align: 'center' }).fillColor('black');
                 }
               } else {
                 doc.fontSize(7).font('Helvetica-Oblique').text('[Tidak ada foto]', xPos, currentY + 50, { width: imageWidth, align: 'center' });
