@@ -156,18 +156,25 @@ export default function ReportsPage() {
                     <Loader2 className="h-3 w-3 animate-spin text-pln-cyan" /> Menyelaraskan armada...
                   </div>
                 ) : (
-                  <select
-                    value={selectedVehicleId}
-                    onChange={(e) => setSelectedVehicleId(e.target.value)}
-                    className="w-full h-9 px-2 text-xs bg-white border border-border rounded-[4px] text-foreground focus:border-pln-cyan outline-none font-sans font-bold shadow-sm"
-                  >
-                    <option value="ALL">-- Seluruh Armada ({filteredVehicles.length} Unit) --</option>
-                    {filteredVehicles.map((vh: any) => (
-                      <option key={vh.id} value={vh.id.toString()}>
-                        {vh.license_plate} - {vh.vehicle_type}
-                      </option>
-                    ))}
-                  </select>
+                  <>
+                    <select
+                      value={selectedVehicleId}
+                      onChange={(e) => setSelectedVehicleId(e.target.value)}
+                      className="w-full h-9 px-2 text-xs bg-white border border-border rounded-[4px] text-foreground focus:border-pln-cyan outline-none font-sans font-bold shadow-sm"
+                    >
+                      <option value="ALL">-- Seluruh Armada ({filteredVehicles.length} Unit) --</option>
+                      {filteredVehicles.map((vh: any) => (
+                        <option key={vh.id} value={vh.id.toString()}>
+                          {vh.license_plate} - {vh.vehicle_type}
+                        </option>
+                      ))}
+                    </select>
+                    {filteredVehicles.length === 0 && (
+                      <div className="mt-2 p-2 bg-amber-50 border border-amber-200 rounded text-[9px] text-amber-700 leading-tight italic">
+                        ⚠️ Tidak ada armada aktif yang terdaftar di database untuk wilayah "{userProfile?.region}". Pastikan data di tabel 'vehicles' sudah benar.
+                      </div>
+                    )}
+                  </>
                 )}
               </div>
             </div>
