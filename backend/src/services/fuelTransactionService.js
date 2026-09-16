@@ -229,43 +229,62 @@ class FuelTransactionService {
           doc.moveDown();
 
           for (const [index, tx] of transactions.entries()) {
-            if (doc.y > 600) doc.addPage();
+            if (doc.y > 550) doc.addPage();
 
-            doc.fontSize(8).font('Helvetica-Bold').text(`TRANSAKSI #${index + 1} - ${tx.license_plate} (${new Date(tx.created_at).toLocaleDateString('id-ID')})`);
+            doc.fontSize(9).font('Helvetica-Bold').text(`DATA TRANSAKSI #${index + 1} - ${tx.license_plate}`, 30, doc.y, { underline: true });
             doc.moveDown(0.5);
 
-            const imageWidth = 175;
             const startX = 30;
             const currentY = doc.y;
 
-            const photoTypes = [
-              { key: 'odometer_photo_path', label: '1. Odo Sebelum' },
-              { key: 'odometer_after_photo_path', label: '2. Odo Sesudah' },
-              { key: 'receipt_photo_path', label: '3. Nota / Struk' }
+            // --- TATA LETAK ASIMETRIS (LANDSCAPE & PORTRAIT) ---
+
+            // 1. Odo Sebelum & Sesudah (LANDSCAPE - Baris Atas)
+            const odoWidth = 265;
+            const odoHeight = 150;
+
+            const odos = [
+              { key: 'odometer_photo_path', label: '1. Odometer Awal (Landscape)', x: startX },
+              { key: 'odometer_after_photo_path', label: '2. Odometer Akhir (Landscape)', x: startX + odoWidth + 5 }
             ];
 
-            for (let i = 0; i < photoTypes.length; i++) {
-              const photo = photoTypes[i];
-              const xPos = startX + (i * (imageWidth + 5));
-
-              doc.fontSize(6).font('Helvetica-Bold').text(photo.label, xPos, currentY, { width: imageWidth, align: 'center' });
-
-              const imgPath = tx[photo.key];
+            for (const odo of odos) {
+              doc.fontSize(7).font('Helvetica-Bold').text(odo.label, odo.x, currentY, { width: odoWidth, align: 'center' });
+              const imgPath = tx[odo.key];
               if (imgPath) {
                 try {
                   let imgUrl = imgPath.startsWith('http') ? imgPath : `https://jgqpxhoyqrfvspmpopqa.supabase.co/storage/v1/object/public/uploads/${imgPath}`;
                   const response = await axios.get(imgUrl, { responseType: 'arraybuffer', timeout: 8000 });
-                  doc.image(response.data, xPos, currentY + 10, { width: imageWidth, height: 110 });
+                  doc.image(response.data, odo.x, currentY + 10, { fit: [odoWidth, odoHeight], align: 'center', valign: 'center' });
                 } catch (err) {
-                  doc.fontSize(6).fillColor('red').text('[Gagal memuat]', xPos, currentY + 40, { width: imageWidth, align: 'center' }).fillColor('black');
+                  doc.fontSize(6).fillColor('red').text('[Gagal memuat]', odo.x, currentY + 50, { width: odoWidth, align: 'center' }).fillColor('black');
                 }
-              } else {
-                doc.fontSize(6).text('[Tanpa Berkas]', xPos, currentY + 40, { width: imageWidth, align: 'center' });
               }
             }
 
-            doc.y = currentY + 130; // Move cursor down after 3 images
-            doc.moveDown();
+            // 2. Struk/Nota (PORTRAIT - Baris Bawah)
+            const receiptY = currentY + odoHeight + 25;
+            const receiptWidth = 200; // Lebih ramping karena Portrait
+            const receiptHeight = 280; // Lebih tinggi
+            const receiptX = (595 - receiptWidth) / 2; // Center horizontal di kertas A4
+
+            doc.fontSize(7).font('Helvetica-Bold').text('3. Nota / Struk Pembelian (Portrait)', 30, receiptY, { width: 535, align: 'center' });
+
+            if (tx.receipt_photo_path) {
+              try {
+                let imgUrl = tx.receipt_photo_path.startsWith('http') ? tx.receipt_photo_path : `https://jgqpxhoyqrfvspmpopqa.supabase.co/storage/v1/object/public/uploads/${tx.receipt_photo_path}`;
+                const response = await axios.get(imgUrl, { responseType: 'arraybuffer', timeout: 8000 });
+                doc.image(response.data, receiptX, receiptY + 10, { fit: [receiptWidth, receiptHeight], align: 'center' });
+                doc.y = receiptY + receiptHeight + 20; // Update cursor Y ke bawah struk
+              } catch (err) {
+                doc.fontSize(6).fillColor('red').text('[Gagal memuat struk]', 30, receiptY + 50, { width: 535, align: 'center' }).fillColor('black');
+                doc.y = receiptY + 70;
+              }
+            } else {
+               doc.y = receiptY + 20;
+            }
+
+            doc.moveDown(2);
           }
         }
 
