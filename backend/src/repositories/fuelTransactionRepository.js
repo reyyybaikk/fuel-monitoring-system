@@ -158,7 +158,12 @@ class FuelTransactionRepository {
 
   async findAllForExport({ vehicle_id, ul_nd, start_date, end_date, status }) {
     let query = `
-      SELECT ft.*, v.license_plate, v.vehicle_type, u.full_name as driver_name
+      SELECT
+        ft.*,
+        v.license_plate,
+        v.vehicle_type,
+        u.full_name as driver_name,
+        LEAD(ft.odometer) OVER (PARTITION BY ft.vehicle_id ORDER BY ft.created_at ASC) as odometer_next
       FROM fuel_transactions ft
       JOIN vehicles v ON ft.vehicle_id = v.id
       JOIN users u ON ft.driver_id = u.id

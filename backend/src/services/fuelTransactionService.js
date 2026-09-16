@@ -197,7 +197,7 @@ class FuelTransactionService {
         doc.text('Tanggal', 45, tableTop);
         doc.text('No. Pol / Pelat', 85, tableTop);
         doc.text('Stand Awal/Odo', 155, tableTop);
-        doc.text('Bar Bensin', 225, tableTop);
+        doc.text('Stand Akhir/Odo', 225, tableTop);
         doc.text('Liter / Jenis BBM', 285, tableTop);
         doc.text('Total Rupiah Pembelian', 385, tableTop);
 
@@ -214,8 +214,8 @@ class FuelTransactionService {
             doc.text(i + 1, 30, y, { width: 15, align: 'center' });
             doc.text(new Date(tx.created_at).toLocaleDateString('id-ID'), 45, y);
             doc.text(tx.license_plate, 85, y);
-            doc.text(`${tx.odometer} Km`, 155, y);
-            doc.text('-', 225, y); // Stand Bar Bensin placeholder
+            doc.text(`${Number(tx.odometer).toLocaleString('id-ID')} Km`, 155, y);
+            doc.text(tx.odometer_next ? `${Number(tx.odometer_next).toLocaleString('id-ID')} Km` : '-', 225, y);
             doc.text(`${tx.fuel_amount} L / ${tx.fuel_type || 'BBM'}`, 285, y);
             doc.text(`Rp ${Number(tx.total_cost).toLocaleString('id-ID')}`, 385, y);
             y += 12;
