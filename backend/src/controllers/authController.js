@@ -158,7 +158,12 @@ const login = async (req, res, next) => {
     }
 
     if (!user) {
-      error = new Error('Username/Email atau password salah');
+      // DEBUG: Lihat daftar user yang ada jika gagal login
+      const allUsers = await db.query('SELECT email FROM users LIMIT 10');
+      const emails = allUsers.rows.map(u => u.email).join(', ');
+      console.log(`[DEBUG_LOGIN] User tidak ditemukan: ${identifier}. Tersedia: ${emails}`);
+
+      error = new Error(`Username/Email tidak ditemukan. Terdaftar: ${emails}`);
       error.statusCode = 401;
       throw error;
     }
