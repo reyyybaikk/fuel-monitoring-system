@@ -20,10 +20,11 @@ class VehicleRepository {
       paramIndex++;
     }
 
-    // Filter berdasarkan Wilayah/UL ND (Dibuat lebih fleksibel agar cocok dengan nama panjang)
+    // Filter berdasarkan Wilayah (Mengecek kolom ul_nd atau ul_pln secara cerdas)
     if (ul_nd) {
-      query += ` AND ($${paramIndex} ILIKE '%' || ul_nd || '%' OR ul_nd ILIKE $${paramIndex})`;
-      values.push(`%${ul_nd.replace('Unit Layanan ', '').trim()}%`);
+      const searchPattern = `%${ul_nd.replace('Unit Layanan ', '').trim()}%`;
+      query += ` AND (v.ul_nd ILIKE $${paramIndex} OR v.ul_pln ILIKE $${paramIndex})`;
+      values.push(searchPattern);
       paramIndex++;
     }
 
