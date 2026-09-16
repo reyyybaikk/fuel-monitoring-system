@@ -184,7 +184,8 @@ class FuelTransactionService {
 
         // --- HEADER (REVISI: SEDERHANA TANPA KOP SURAT) ---
         doc.fontSize(10).font('Helvetica-Bold');
-        doc.text(`Unit Layanan   : ${user.region || 'UPKAL2 REGIONAL'}`.toUpperCase());
+        const displayRegion = user.region ? `UL ${user.region.replace('Unit Layanan ', '')}` : 'UPKAL2 REGIONAL';
+        doc.text(`Unit Layanan   : ${displayRegion}`.toUpperCase());
         doc.text(`Periode Audit  : ${query.start_date} s/d ${query.end_date}`);
         doc.text(`Model Kendaraan: ${vehicle ? `${vehicle.license_plate} - ${vehicle.vehicle_type}` : 'Seluruh Armada'}`.toUpperCase());
         doc.moveDown(2);
