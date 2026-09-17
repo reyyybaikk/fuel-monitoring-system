@@ -153,6 +153,23 @@ class FuelTransactionService {
     return await fuelTransactionRepository.updateStatus(id, status);
   }
 
+  async updateTransactionData(id, data) {
+    const transaction = await fuelTransactionRepository.findById(id);
+    if (!transaction) {
+      const error = new Error('Transaksi BBM tidak ditemukan');
+      error.statusCode = 404;
+      throw error;
+    }
+
+    // Pembenahan data oleh admin biasanya mengubah status menjadi REVIEW atau APPROVED
+    const updated = await fuelTransactionRepository.update(id, {
+      ...data,
+      status: data.status || 'APPROVED'
+    });
+
+    return updated;
+  }
+
   async getAnalytics(start, end, user) {
     return await fuelTransactionRepository.getAnalytics(start, end, user.role, user.region);
   }
