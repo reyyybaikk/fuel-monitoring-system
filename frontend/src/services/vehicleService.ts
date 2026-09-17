@@ -6,6 +6,9 @@ export interface Vehicle {
   vehicle_type: string;
   fuel_tank_capacity: number;
   fuel_consumption_rate: number;
+  fuel_type: string;
+  usage_purpose?: string;
+  project_name?: string;
   is_active: boolean;
   ul_nd?: string;
   ul_pln?: string;
