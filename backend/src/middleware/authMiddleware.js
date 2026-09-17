@@ -32,21 +32,27 @@ const authenticate = async (req, res, next) => {
 
     // 1. Check if Authorization header exists
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      console.log(`[AUTH_DEBUG] Headers received:`, Object.keys(req.headers));
+      console.log(`[AUTH_DEBUG] Header tidak ditemukan atau bukan Bearer. Headers:`, Object.keys(req.headers));
       return useFallback(req, next, 'Header Authorization tidak ditemukan');
     }
 
     const token = authHeader.split(' ')[1];
 
-    // 2. Prevent processing empty or "null"/"undefined" strings as tokens
     if (!token || token === 'null' || token === 'undefined') {
-      return useFallback(req, next, 'Token kosong atau invalid string');
+      return useFallback(req, next, 'Token kosong atau string tidak valid');
     }
+
+    console.log(`[AUTH_DEBUG] Memverifikasi token (Awal: ${token.substring(0, 10)}...)`);
 
     // --- STRATEGY 1: Local JWT ---
     try {
+      if (!process.env.JWT_SECRET) {
+        console.error('[AUTH_ERROR] JWT_SECRET tidak terdefinisi di Environment Variable!');
+      }
+
       const localDecoded = verifyToken(token);
       if (localDecoded) {
+        console.log(`[AUTH_DEBUG] Berhasil lewat Strategy 1 (Local JWT) - User ID: ${localDecoded.id}`);
         req.user = localDecoded;
         return next();
       }
@@ -73,25 +79,23 @@ const authenticate = async (req, res, next) => {
     }
 
     // --- STRATEGY 3: Firebase ID Token ---
-    // Pengecekan lebih ketat: Hanya panggil Firebase jika header JWT memiliki 'kid'
     if (isFirebaseInitialized() && token.split('.').length === 3) {
       try {
         const jwt = require('jsonwebtoken');
         const decoded = jwt.decode(token, { complete: true });
 
         if (decoded && decoded.header && decoded.header.kid) {
+          console.log('[AUTH_DEBUG] Mendeteksi Firebase ID Token (terdapat header kid)');
           const firebaseDecoded = await verifyFirebaseToken(token);
           if (firebaseDecoded && firebaseDecoded.email) {
+            console.log(`[AUTH_DEBUG] Berhasil lewat Strategy 3 (Firebase) - Email: ${firebaseDecoded.email}`);
             const fullName = req.query.full_name || firebaseDecoded.name || firebaseDecoded.email.split('@')[0];
             const whatsappNumber = req.query.whatsapp_number || null;
 
-            // --- PERUBAHAN: Aturan Registrasi Google/Firebase ---
-            // Cek apakah user sudah ada di database lokal
             let dbUser = await userRepository.findByEmail(firebaseDecoded.email);
+            // ... (rest of the logic remains the same)
 
             if (!dbUser) {
-              // Jika user TIDAK ditemukan di DB, kita hanya izinkan pembuatan akun
-              // JIKA ada parameter whatsapp_number (berarti sedang dalam flow Registrasi)
               if (whatsappNumber) {
                 dbUser = await userRepository.findOrCreateFirebaseUser({
                   email: firebaseDecoded.email,
@@ -99,7 +103,6 @@ const authenticate = async (req, res, next) => {
                   whatsappNumber: whatsappNumber
                 });
               } else {
-                // Jika tidak ada whatsapp_number, berarti ini Login Google tanpa registrasi
                 console.warn(`[AUTH_DEBUG] User Google tidak terdaftar: ${firebaseDecoded.email}`);
                 return useFallback(req, next, 'Akun Google ini belum terdaftar di sistem. Silakan registrasi terlebih dahulu.');
               }
@@ -111,6 +114,7 @@ const authenticate = async (req, res, next) => {
               throw error;
             }
 
+            // Sertakan region agar token lokal yang di-generate nantinya valid
             req.user = {
               id: dbUser.id,
               email: dbUser.email,
@@ -118,13 +122,14 @@ const authenticate = async (req, res, next) => {
               username: dbUser.username,
               full_name: dbUser.full_name,
               whatsapp_number: dbUser.whatsapp_number,
+              region: dbUser.region,
               firebaseUid: firebaseDecoded.uid
             };
             return next();
           }
         }
       } catch (firebaseErr) {
-        // Abaikan error di sini, biarkan lanjut ke fallback
+        console.error('[AUTH_DEBUG] Strategy 3 (Firebase) failed:', firebaseErr.message);
       }
     }
 
