@@ -44,10 +44,14 @@ const authenticate = async (req, res, next) => {
     }
 
     // --- STRATEGY 1: Local JWT ---
-    const localDecoded = verifyToken(token);
-    if (localDecoded) {
-      req.user = localDecoded;
-      return next();
+    try {
+      const localDecoded = verifyToken(token);
+      if (localDecoded) {
+        req.user = localDecoded;
+        return next();
+      }
+    } catch (err) {
+      console.error('[AUTH_DEBUG] Strategy 1 (Local JWT) failed:', err.message);
     }
 
     // --- STRATEGY 2: Supabase JWT ---
@@ -96,9 +100,8 @@ const authenticate = async (req, res, next) => {
                 });
               } else {
                 // Jika tidak ada whatsapp_number, berarti ini Login Google tanpa registrasi
-                const error = new Error('Akun Google ini belum terdaftar di sistem. Silakan registrasi terlebih dahulu di aplikasi.');
-                error.statusCode = 404;
-                throw error;
+                console.warn(`[AUTH_DEBUG] User Google tidak terdaftar: ${firebaseDecoded.email}`);
+                return useFallback(req, next, 'Akun Google ini belum terdaftar di sistem. Silakan registrasi terlebih dahulu.');
               }
             }
 
