@@ -310,9 +310,10 @@ class FuelTransactionService {
         }
 
         // --- SUB TOTAL ROW ---
-        doc.rect(42, y, 511, 15).fill('#f8fafc');
+        doc.rect(42, y, 511, 15).fill('#f1f5f9');
         doc.fillColor('black').font('Helvetica-Bold').fontSize(7);
-        doc.text('SUB TOTAL (AKUMULASI)', colX.no, y + 4, { width: colX.bbm - colX.no, align: 'right' });
+        // Teks "SUBTOTAL" dirapikan posisinya agar pas di tengah kolom deskripsi (No s/d Stand Akhir)
+        doc.text('SUBTOTAL', colX.no, y + 4, { width: colX.bbm - colX.no - 10, align: 'right' });
         doc.text(`${totalLiter.toFixed(2)} L`, colX.bbm, y + 4, { width: colWidths.bbm, align: 'center' });
         doc.text(`Rp ${totalRupiah.toLocaleString('id-ID')}`, colX.cost, y + 4, { width: colWidths.cost - 5, align: 'right' });
         drawRowBorders(y, 15);
