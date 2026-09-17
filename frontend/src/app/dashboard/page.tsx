@@ -141,7 +141,7 @@ export default function DashboardPage() {
           { label: 'Total Konsumsi BBM', value: `${stats.totalLiter.toLocaleString('id-ID')} L`, change: stats.literChange, icon: Fuel, color: 'pln-cyan' },
           { label: 'Total Biaya', value: `Rp ${stats.totalCost.toLocaleString('id-ID')}`, change: stats.costChange, icon: Wallet, color: 'pln-darkBlue' },
           { label: 'Status Armada Aktif', value: `${stats.activeVehicles}/${stats.totalVehicles}`, sub: 'Unit', icon: Truck, color: 'pln-yellow' },
-          { label: 'Anomali Terdeteksi', value: `${stats.anomalyCount} Insiden`, badge: 'WARNING', icon: AlertTriangle, color: 'anomaly-red' },
+          { label: 'Anomali Terdeteksi', value: `${stats.anomalyCount} Anomaly`, badge: 'WARNING', icon: AlertTriangle, color: 'anomaly-red' },
         ].map((item, i) => (
           <InteractiveElement key={i} className="rounded-[8px] border border-border bg-white shadow-sm overflow-hidden h-28 p-4 flex flex-col justify-between group hover:border-pln-cyan/30 transition-all cursor-default">
             <div className="flex items-center justify-between">

@@ -287,7 +287,7 @@ function TransactionsContent() {
               )}>
                 <h4 className="text-[11px] font-bold flex items-center gap-2 mb-1.5 text-foreground uppercase tracking-tight">
                   <AlertTriangle className={cn("h-4 w-4", activeTx.ml_is_anomaly ? "text-anomaly-red" : "text-emerald-600")} />
-                  Kesimpulan Intelegensia AI
+                  Kesimpulan Machine Learning
                 </h4>
                 <p className={cn(
                   "text-xs leading-relaxed font-medium",

@@ -221,7 +221,7 @@ export default function LoginPage() {
                       </div>
                       <Input
                         type="email"
-                        placeholder="contoh: operator.kaltim2@plnnusadaya.co.id"
+                        placeholder="contoh: adminregion.co.id"
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
                         disabled={isLoading}

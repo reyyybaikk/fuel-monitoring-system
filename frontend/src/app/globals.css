@@ -12,11 +12,11 @@
   --font-sans: 'Hanken Grotesk', var(--font-sans);
   --font-mono: 'JetBrains Mono', var(--font-geist-mono);
 
-  --color-pln-darkBlue: #156075;
-  --color-pln-cyan: #18a4c5;
-  --color-pln-iceBlue: #e6f4f8;
-  --color-pln-yellow: #f6e736;
-  --color-anomaly-red: #ef4444;
+  --color-pln-darkBlue: #0b536f;
+  --color-pln-cyan: #00a2e8;
+  --color-pln-iceBlue: #f8f9ff;
+  --color-pln-yellow: #ffe600;
+  --color-anomaly-red: #ba1a1a;
 
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);

@@ -63,10 +63,9 @@ export default function Topbar() {
 
         <div className="flex items-center gap-3">
           {/* Logo PLN */}
-          <img src="/logo-pln.png" alt="PLN" className="h-9 w-auto object-contain" />
+          <img src="/logo-pln.png" alt="PLN" className="h-12 w-auto object-contain" />
           <div className="flex flex-col leading-none">
-            <span className="font-black text-[12px] text-pln-darkBlue tracking-tighter">PLN</span>
-            <span className="text-[10px] font-bold text-pln-cyan">Nusa Daya</span>
+       
           </div>
 
           <div className="h-8 w-px bg-slate-200 mx-1"></div>
@@ -76,7 +75,7 @@ export default function Topbar() {
             <img
               src="/logo-danantara.png"
               alt="Danantara"
-              className="h-8 w-auto object-contain"
+              className="h-6 w-auto object-contain"
               onError={(e) => {
                 e.currentTarget.style.display = 'none';
                 e.currentTarget.nextElementSibling?.classList.remove('hidden');
@@ -98,10 +97,10 @@ export default function Topbar() {
       {/* CENTER SECTION: LETS GO STYLE */}
       <div className="hidden lg:flex flex-col items-center text-center flex-1 mx-4">
         <h2 className="text-base font-black text-[#006492] uppercase tracking-[0.2em]">
-          LETS GO
+          FUEL MONITORING SYSTEM
         </h2>
         <p className="text-[10px] font-bold text-slate-500 uppercase tracking-tight opacity-80">
-          {adminRegion} • Logistik Efisien Terintegrasi & Solutif
+          {adminRegion} • Monitoring BBM Efisien Terintegrasi
         </p>
       </div>
 
