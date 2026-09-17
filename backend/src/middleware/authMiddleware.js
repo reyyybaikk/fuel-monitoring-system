@@ -32,6 +32,7 @@ const authenticate = async (req, res, next) => {
 
     // 1. Check if Authorization header exists
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      console.log(`[AUTH_DEBUG] Headers received:`, Object.keys(req.headers));
       return useFallback(req, next, 'Header Authorization tidak ditemukan');
     }
 
