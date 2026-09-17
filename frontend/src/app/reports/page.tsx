@@ -256,6 +256,16 @@ export default function ReportsPage() {
                           <td className="p-1.5 font-black font-mono">Rp {Number(tx.total_cost).toLocaleString('id-ID')}</td>
                         </tr>
                       ))}
+                      {/* Baris SUBTOTAL untuk menyamakan dengan PDF */}
+                      <tr className="bg-slate-50 font-black">
+                        <td colSpan={5} className="p-1.5 border-r border-slate-400 text-right uppercase tracking-tighter text-[7px]">SUBTOTAL</td>
+                        <td className="p-1.5 border-r border-slate-400 text-center">
+                          {reportTransactions.reduce((sum: number, tx: any) => sum + Number(tx.fuel_amount || 0), 0).toFixed(2)} L
+                        </td>
+                        <td className="p-1.5 text-right font-mono text-[9px]">
+                          Rp {reportTransactions.reduce((sum: number, tx: any) => sum + Number(tx.total_cost || 0), 0).toLocaleString('id-ID')}
+                        </td>
+                      </tr>
                     </tbody>
                  </table>
                ) : (
