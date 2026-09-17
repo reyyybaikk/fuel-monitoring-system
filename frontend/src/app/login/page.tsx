@@ -52,7 +52,13 @@ export default function LoginPage() {
     try {
       const response: any = await loginToBackend(email, password);
       const token = response.token || response.accessToken || response.data?.token;
-      const user = response.user || response.data?.user || { name: 'Admin User', role: 'ADMIN' };
+      const user = response.user || response.data?.user || {
+        id: response.data?.id,
+        name: response.data?.full_name,
+        username: response.data?.username,
+        role: response.data?.role,
+        region: response.data?.region
+      };
 
       if (!token) throw new Error('Token tidak ditemukan dalam respon server.');
 

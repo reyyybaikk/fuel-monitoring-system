@@ -3,6 +3,7 @@ import { create } from 'zustand';
 interface UserProfile {
   id: number;
   name: string;
+  username: string;
   email: string;
   role: 'ADMIN_PUSAT' | 'ADMIN' | 'MANAGER' | 'DRIVER';
   region?: string;
