@@ -59,26 +59,7 @@ export default function Topbar() {
           <Menu className="h-5 w-5" />
         </button>
 
-        <div className="flex items-center gap-3">
-          <img src="/logo-pln.png" alt="PLN" className="h-10 w-auto object-contain" />
-          <div className="flex flex-col leading-none">
-            <span className="font-black text-[14px] text-pln-darkBlue tracking-tighter">PLN</span>
-            <span className="text-[11px] font-bold text-pln-cyan">Nusa Daya</span>
-          </div>
-
-          <div className="h-8 w-px bg-slate-200 mx-1"></div>
-
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded bg-[#0b1c30] flex items-center justify-center text-white">
-               <Zap className="h-4 w-4 text-[#FFE600]" />
-            </div>
-            <div className="hidden sm:flex flex-col leading-none">
-              <span className="font-bold text-[11px] text-slate-800 uppercase tracking-tighter">Danantara</span>
-              <span className="text-[9px] font-medium text-slate-500 uppercase">Indonesia</span>
-            </div>
-          </div>
-        </div>
-      </div>
+       
 
       {/* CENTER SECTION: LETS GO STYLE */}
       <div className="hidden lg:flex flex-col items-center text-center flex-1 mx-4">
