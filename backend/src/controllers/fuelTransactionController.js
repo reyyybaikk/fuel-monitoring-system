@@ -110,7 +110,7 @@ class FuelTransactionController {
   getAnalytics = async (req, res, next) => {
     try {
       const { start, end } = req.query;
-      const result = await fuelTransactionService.getAnalytics(start, end);
+      const result = await fuelTransactionService.getAnalytics(start, end, req.user);
       res.status(200).json({ success: true, message: 'Analytics data retrieved', data: result });
     } catch (error) {
       next(error);
@@ -120,7 +120,7 @@ class FuelTransactionController {
   // 7. Get Summary (Ported from legacy)
   getSummary = async (req, res, next) => {
     try {
-      const result = await fuelTransactionService.getSummary();
+      const result = await fuelTransactionService.getSummary(req.user);
       res.status(200).json({ success: true, message: 'Summary data retrieved', data: result });
     } catch (error) {
       next(error);

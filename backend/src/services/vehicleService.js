@@ -1,7 +1,7 @@
 const vehicleRepository = require('../repositories/vehicleRepository');
 
 class VehicleService {
-  async getVehicles(query) {
+  async getVehicles(query, user) {
     const page = parseInt(query.page, 10) || 1;
     const limit = parseInt(query.limit, 10) || 10;
     const offset = (page - 1) * limit;
@@ -9,7 +9,13 @@ class VehicleService {
     const ul_nd = query.ul_nd || '';
     const vehicle_type = query.vehicle_type || '';
 
-    const filters = { search, ul_nd, vehicle_type };
+    const filters = {
+      search,
+      ul_nd,
+      vehicle_type,
+      role: user.role,
+      region: user.region
+    };
 
     const data = await vehicleRepository.findAll({ limit, offset, ...filters });
     const total = await vehicleRepository.countAll(filters);

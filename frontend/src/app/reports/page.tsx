@@ -26,29 +26,34 @@ import { cn } from '@/lib/utils';
 export default function ReportsPage() {
   const { userProfile } = useAuthStore();
   const [selectedVehicleId, setSelectedVehicleId] = useState<string>('ALL');
+  const [selectedRegion, setSelectedRegion] = useState<string>(userProfile?.region || 'ALL');
   const [vehicleSearch, setVehicleSearch] = useState('');
   const [startDate, setStartDate] = useState(new Date().toISOString().split('T')[0]);
   const [endDate, setEndDate] = useState(new Date().toISOString().split('T')[0]);
   const [isDownloading, setIsDownloading] = useState(false);
   const [mounted, setMounted] = useState(false);
 
+  const isPusat = userProfile?.role === 'ADMIN_PUSAT';
+
   useEffect(() => {
     setMounted(true);
-  }, []);
+    if (userProfile?.region) setSelectedRegion(userProfile.region);
+  }, [userProfile]);
 
   const { data: vehicles, isLoading: isLoadingVehicles } = useQuery({
-    queryKey: ['vehicles-report', userProfile?.region],
-    queryFn: () => getVehicles(undefined, userProfile?.region),
-    enabled: mounted && !!userProfile?.region,
+    queryKey: ['vehicles-report', isPusat ? selectedRegion : userProfile?.region],
+    queryFn: () => getVehicles(undefined, isPusat ? (selectedRegion === 'ALL' ? undefined : selectedRegion) : userProfile?.region),
+    enabled: mounted && (isPusat || !!userProfile?.region),
   });
 
   const { data: reportTransactions, isLoading: isLoadingPreview } = useQuery({
-    queryKey: ['report-preview', selectedVehicleId, startDate, endDate],
+    queryKey: ['report-preview', selectedVehicleId, selectedRegion, startDate, endDate],
     queryFn: async () => {
       // Backend findAllForExport sekarang mengembalikan odometer_next via LEAD()
       const response = await api.get('/api/fuel-transactions/export-pdf-preview', {
         params: {
           vehicle_id: selectedVehicleId === 'ALL' ? undefined : selectedVehicleId,
+          ul_nd: isPusat ? (selectedRegion === 'ALL' ? undefined : selectedRegion) : userProfile?.region,
           start_date: startDate,
           end_date: endDate
         }
@@ -79,7 +84,8 @@ export default function ReportsPage() {
     try {
       const response = await api.get('/api/fuel-transactions/export-pdf', {
         params: {
-          vehicle_id: selectedVehicleId,
+          vehicle_id: selectedVehicleId === 'ALL' ? undefined : selectedVehicleId,
+          ul_nd: isPusat ? (selectedRegion === 'ALL' ? undefined : selectedRegion) : userProfile?.region,
           start_date: startDate,
           end_date: endDate,
         },
@@ -118,9 +124,32 @@ export default function ReportsPage() {
         {/* PANEL FILTER (KIRI) */}
         <Card className="xl:col-span-4 rounded-[8px] border border-border bg-white shadow-sm p-4 space-y-4">
           <div className="space-y-4">
+            {/* Otoritas Wilayah / Selector Wilayah (Untuk Pusat) */}
             <div className="p-3 bg-pln-iceBlue/40 border border-pln-cyan/10 rounded-[6px]">
-              <span className="text-[9px] font-bold text-muted-foreground uppercase block mb-1">Otoritas Wilayah</span>
-              <span className="text-xs font-black text-pln-darkBlue uppercase">UL {userProfile?.region?.replace('Unit Layanan ', '')}</span>
+              <span className="text-[9px] font-bold text-muted-foreground uppercase block mb-1">
+                {isPusat ? 'Filter Wilayah Operasional' : 'Otoritas Wilayah'}
+              </span>
+              {isPusat ? (
+                <select
+                  value={selectedRegion}
+                  onChange={(e) => {
+                    setSelectedRegion(e.target.value);
+                    setSelectedVehicleId('ALL');
+                  }}
+                  className="w-full bg-transparent text-xs font-black text-pln-darkBlue uppercase outline-none"
+                >
+                  <option value="ALL">SEMUA WILAYAH (GLOBAL)</option>
+                  <option value="Banjarmasin">UL Banjarmasin</option>
+                  <option value="Barabai">UL Barabai</option>
+                  <option value="Palangkaraya">UL Palangkaraya</option>
+                  <option value="Pangkalan Bun">UL Pangkalan Bun</option>
+                  <option value="Kapuas">UL Kapuas</option>
+                </select>
+              ) : (
+                <span className="text-xs font-black text-pln-darkBlue uppercase">
+                  UL {userProfile?.region?.replace('Unit Layanan ', '')}
+                </span>
+              )}
             </div>
 
             <div className="space-y-2">
@@ -176,7 +205,7 @@ export default function ReportsPage() {
             <div className="space-y-1 mb-8 border-b border-slate-300 pb-4">
                <div className="flex text-xs">
                   <span className="w-36 font-bold text-slate-500 uppercase tracking-tight">Unit Layanan</span>
-                  <span className="font-black uppercase">: UL {userProfile?.region?.replace('Unit Layanan ', '')}</span>
+                  <span className="font-black uppercase">: {isPusat ? (selectedRegion === 'ALL' ? 'PUSAT UPKAL2 REGIONAL' : `UL ${selectedRegion}`) : `UL ${userProfile?.region?.replace('Unit Layanan ', '')}`}</span>
                </div>
                <div className="flex text-xs">
                   <span className="w-36 font-bold text-slate-500 uppercase tracking-tight">Periode Audit</span>

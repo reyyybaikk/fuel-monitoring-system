@@ -3,7 +3,7 @@ const vehicleService = require('../services/vehicleService');
 class VehicleController {
   async getAll(req, res, next) {
     try {
-      const result = await vehicleService.getVehicles(req.query);
+      const result = await vehicleService.getVehicles(req.query, req.user);
       res.status(200).json({
         success: true,
         data: result.data,

@@ -2,7 +2,7 @@ const db = require('../config/db');
 
 class VehicleRepository {
   // Mengambil daftar kendaraan dengan pagination dan pencarian/filter opsional
-  async findAll({ limit, offset, search, ul_nd, vehicle_type }) {
+  async findAll({ limit, offset, search, ul_nd, vehicle_type, role, region }) {
     let query = `
       SELECT v.id, v.license_plate, v.vehicle_type, v.ul_nd, v.ul_pln, v.usage_purpose,
              v.project_name, v.fuel_tank_capacity, v.fuel_type, v.fuel_consumption_rate,
@@ -13,6 +13,16 @@ class VehicleRepository {
     const values = [];
     let paramIndex = 1;
 
+    // Filter berdasarkan Role & Wilayah
+    if (role === 'ADMIN_WILAYAH' || role === 'ADMIN') {
+      if (region) {
+        const cleanRegion = region.replace('Unit Layanan ', '').trim();
+        query += ` AND (v.ul_nd ILIKE $${paramIndex} OR v.ul_pln ILIKE $${paramIndex})`;
+        values.push(`%${cleanRegion}%`);
+        paramIndex++;
+      }
+    }
+
     // Filter pencarian berdasarkan nomor plat atau nama proyek
     if (search) {
       query += ` AND (v.license_plate ILIKE $${paramIndex} OR v.project_name ILIKE $${paramIndex})`;
@@ -20,11 +30,10 @@ class VehicleRepository {
       paramIndex++;
     }
 
-    // Filter berdasarkan Wilayah (Mengecek kolom ul_nd atau ul_pln secara cerdas)
+    // Filter berdasarkan Wilayah (Input manual dari query param, biasanya untuk Admin Pusat)
     if (ul_nd) {
-      const searchPattern = `%${ul_nd.replace('Unit Layanan ', '').trim()}%`;
       query += ` AND (v.ul_nd ILIKE $${paramIndex} OR v.ul_pln ILIKE $${paramIndex})`;
-      values.push(searchPattern);
+      values.push(`%${ul_nd.replace('Unit Layanan ', '').trim()}%`);
       paramIndex++;
     }
 
@@ -44,10 +53,19 @@ class VehicleRepository {
   }
 
   // Menghitung total data untuk keperluan pagination metadata
-  async countAll({ search, ul_nd, vehicle_type }) {
+  async countAll({ search, ul_nd, vehicle_type, role, region }) {
     let query = `SELECT COUNT(*) FROM vehicles v WHERE v.is_active = TRUE`;
     const values = [];
     let paramIndex = 1;
+
+    if (role === 'ADMIN_WILAYAH' || role === 'ADMIN') {
+      if (region) {
+        const cleanRegion = region.replace('Unit Layanan ', '').trim();
+        query += ` AND (v.ul_nd ILIKE $${paramIndex} OR v.ul_pln ILIKE $${paramIndex})`;
+        values.push(`%${cleanRegion}%`);
+        paramIndex++;
+      }
+    }
 
     if (search) {
       query += ` AND (v.license_plate ILIKE $${paramIndex} OR v.project_name ILIKE $${paramIndex})`;
