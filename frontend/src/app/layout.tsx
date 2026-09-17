@@ -82,15 +82,15 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
 
           {/* Sidebar & Layout Utama hanya dirender penuh setelah mounted */}
           {mounted ? (
-            <div className="relative z-10 flex min-h-screen">
+            <div className="relative z-10 flex flex-col min-h-screen">
               <Toaster position="top-right" reverseOrder={false} />
-              <Sidebar />
-              <div className={cn(
-                "flex flex-col flex-1 transition-all duration-300 ease-in-out",
-                isSidebarCollapsed ? "pl-20" : "pl-64"
-              )}>
-                <Topbar />
-                <main className="w-full pt-20 px-6 py-6 flex-1">
+              <Topbar />
+              <div className="flex flex-1">
+                <Sidebar />
+                <main className={cn(
+                  "flex-1 pt-20 px-6 py-6 transition-all duration-300 ease-in-out",
+                  isSidebarCollapsed ? "pl-20" : "pl-64"
+                )}>
                   {children}
                 </main>
               </div>

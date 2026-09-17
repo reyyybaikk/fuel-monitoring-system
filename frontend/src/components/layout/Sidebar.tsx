@@ -18,7 +18,7 @@ import { cn } from '@/lib/utils';
 export default function Sidebar() {
   const pathname = usePathname();
   const logoutUser = useAuthStore((state) => state.logout);
-  const { isSidebarCollapsed, toggleSidebar } = useUIStore();
+  const { isSidebarCollapsed } = useUIStore();
 
   const menuItems = [
     { label: 'Dasbor', href: '/dashboard', icon: LayoutDashboard },
@@ -29,37 +29,10 @@ export default function Sidebar() {
 
   return (
     <aside className={cn(
-      "fixed left-0 top-0 h-screen bg-pln-darkBlue text-white z-50 flex flex-col justify-between select-none shadow-xl font-sans transition-all duration-300 ease-in-out",
+      "fixed left-0 top-20 bottom-0 bg-pln-darkBlue text-white z-50 flex flex-col justify-between select-none shadow-xl font-sans transition-all duration-300 ease-in-out border-r border-white/5",
       isSidebarCollapsed ? "w-20" : "w-64"
     )}>
       <div className="flex flex-col flex-1 overflow-hidden">
-        {/* Header Logo - Modern Minimalist */}
-        <div className={cn(
-          "h-20 flex items-center px-4 relative border-b border-white/5 bg-black/5",
-          isSidebarCollapsed ? "justify-center" : "gap-3"
-        )}>
-          <div className={cn(
-            "rounded-lg bg-white p-1.5 flex items-center justify-center shrink-0 shadow-sm transition-all duration-300",
-            isSidebarCollapsed ? "w-10 h-10" : "w-12 h-12"
-          )}>
-            <img src="/logo-pln.png" alt="PLN" className="w-full h-auto object-contain" onError={(e) => {
-              e.currentTarget.style.display = 'none';
-              e.currentTarget.parentElement!.innerHTML = '<span class="text-pln-darkBlue font-black text-[10px]">PLN</span>';
-            }} />
-          </div>
-
-          {!isSidebarCollapsed && (
-            <div className="flex flex-col min-w-0 animate-in fade-in slide-in-from-left-2 duration-300">
-              <span className="font-bold text-[12px] text-white tracking-tight uppercase leading-none">
-                PLN NUSA DAYA
-              </span>
-              <span className="text-[9px] text-pln-cyan font-medium uppercase tracking-tighter mt-1 opacity-80">
-                UPK Kalimantan 2
-              </span>
-            </div>
-          )}
-        </div>
-
         {/* Menu Section */}
         <div className="flex-1 py-6 overflow-y-auto no-scrollbar">
           <nav className="flex flex-col gap-1 px-3">

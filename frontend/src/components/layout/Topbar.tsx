@@ -1,36 +1,31 @@
-'use client';
-
 import React, { useState, useEffect } from 'react';
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import { useAuthStore } from '@/store/authStore';
 import { useUIStore } from '@/store/uiStore';
 import { getMe } from '@/services/authService';
 import { useQuery } from '@tanstack/react-query';
-import { Search, Bell, User, Building2, Loader2 } from 'lucide-react';
+import { Bell, User, Loader2, Menu, Zap } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 export default function Topbar() {
   const router = useRouter();
-  const pathname = usePathname();
   const searchParams = useSearchParams();
 
   const { userProfile, login, isAuthenticated } = useAuthStore();
-  const { isSidebarCollapsed } = useUIStore();
-  const [searchValue, setSearchValue] = useState(searchParams.get('q') || '');
+  const { toggleSidebar } = useUIStore();
 
   // State untuk menangani sinkronisasi Hydration
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
     setMounted(true);
-    setSearchValue(searchParams.get('q') || '');
-  }, [searchParams]);
+  }, []);
 
   // Ambil data Profil User asli dari Database (Render)
   const { data: realUser, isLoading } = useQuery({
     queryKey: ['me'],
     queryFn: getMe,
-    enabled: mounted && isAuthenticated, // Hanya jalan jika sudah terpasang di browser & login
+    enabled: mounted && isAuthenticated,
   });
 
   useEffect(() => {
@@ -45,87 +40,75 @@ export default function Topbar() {
     }
   }, [realUser, mounted]);
 
-  // Jika belum mounted (masih di server), tampilkan bar kosong atau placeholder agar HTML cocok
   if (!mounted) {
-    return (
-      <header className={cn(
-        "fixed top-0 right-0 h-16 bg-white z-40 px-6 border-b border-border shadow-sm transition-all duration-300",
-        isSidebarCollapsed ? "left-20" : "left-64"
-      )}></header>
-    );
+    return <header className="fixed top-0 left-0 right-0 h-20 bg-white z-[60] border-b border-slate-200 shadow-sm"></header>;
   }
 
   const adminName = userProfile?.name || realUser?.full_name || 'Admin';
   const adminRole = userProfile?.role || realUser?.role || 'ADMIN';
-
-  // Jika Admin Pusat, tampilkan 'Pusat UPKAL2', jika tidak tampilkan regionnya
-  const adminRegion = adminRole === 'ADMIN_PUSAT'
-    ? 'Kantor Pusat UPKAL2'
-    : (userProfile?.region || realUser?.region || 'Unit UPKAL2 Regional');
-
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!searchValue.trim()) return;
-    const params = new URLSearchParams(searchParams.toString());
-    params.set('q', searchValue.trim());
-    router.push(`/transactions?${params.toString()}`);
-  };
+  const adminRegion = adminRole === 'ADMIN_PUSAT' ? 'Kantor Pusat UPKAL2' : (userProfile?.region || realUser?.region || 'Unit UPKAL2 Regional');
 
   return (
-    <header className={cn(
-      "fixed top-0 right-0 h-16 bg-white z-40 px-6 flex items-center justify-between border-b border-border shadow-sm select-none font-sans transition-all duration-300",
-      isSidebarCollapsed ? "left-20" : "left-64"
-    )}>
-      <div className="flex items-center gap-4 flex-1 max-w-xl">
-        <form onSubmit={handleSearch} className="relative flex items-center w-full group">
-          <div className="flex items-center gap-2 w-full px-3 py-1.5 rounded-[4px] bg-[#e6f4f8]/40 border border-border/60 text-muted-foreground focus-within:border-pln-cyan focus-within:ring-1 focus-within:ring-pln-cyan/30 focus-within:bg-white transition-all">
-            <Search className="h-4 w-4 text-muted-foreground/60 shrink-0 group-focus-within:text-pln-cyan transition-colors" />
-            <input
-              type="text"
-              value={searchValue}
-              onChange={(e) => setSearchValue(e.target.value)}
-              placeholder="Cari pelat nomor, driver, atau ID transaksi..."
-              className="w-full bg-transparent text-xs text-foreground placeholder:text-muted-foreground/50 focus:outline-none font-sans"
-            />
-          </div>
-        </form>
+    <header className="fixed top-0 left-0 right-0 h-20 bg-white z-[60] px-4 flex items-center justify-between border-b border-slate-200 shadow-sm select-none font-sans">
+      {/* LEFT SECTION: MENU & LOGOS */}
+      <div className="flex items-center gap-4">
+        <button
+          onClick={toggleSidebar}
+          className="w-10 h-10 rounded-md border border-slate-200 bg-slate-50 flex items-center justify-center text-slate-600 hover:bg-slate-100 hover:text-pln-darkBlue transition-all shadow-sm active:scale-95 cursor-pointer"
+        >
+          <Menu className="h-5 w-5" />
+        </button>
 
-        <div className="hidden xl:flex items-center gap-1.5 px-3 py-1 rounded-full bg-pln-iceBlue text-pln-darkBlue border border-pln-cyan/10 shrink-0">
-          <Building2 className="h-3.5 w-3.5 text-pln-cyan shrink-0" />
-          <span className="font-mono text-[9px] font-bold uppercase tracking-wider">
-             {adminRegion}
-          </span>
+        <div className="flex items-center gap-3">
+          <img src="/logo-pln.png" alt="PLN" className="h-10 w-auto object-contain" />
+          <div className="flex flex-col leading-none">
+            <span className="font-black text-[14px] text-pln-darkBlue tracking-tighter">PLN</span>
+            <span className="text-[11px] font-bold text-pln-cyan">Nusa Daya</span>
+          </div>
+
+          <div className="h-8 w-px bg-slate-200 mx-1"></div>
+
+          <div className="flex items-center gap-2">
+            <div className="w-8 h-8 rounded bg-[#0b1c30] flex items-center justify-center text-white">
+               <Zap className="h-4 w-4 text-[#FFE600]" />
+            </div>
+            <div className="hidden sm:flex flex-col leading-none">
+              <span className="font-bold text-[11px] text-slate-800 uppercase tracking-tighter">Danantara</span>
+              <span className="text-[9px] font-medium text-slate-500 uppercase">Indonesia</span>
+            </div>
+          </div>
         </div>
       </div>
 
-      <div className="flex items-center gap-4">
-        <button
-          type="button"
-          onClick={() => router.push('/transactions?status=ANOMALY')}
-          className="relative flex items-center gap-1.5 px-3 py-1.5 rounded-[4px] bg-red-50 text-anomaly-red border border-red-100 hover:bg-red-100/70 transition-all font-sans"
-        >
-          <Bell className="h-4 w-4 text-anomaly-red shrink-0" />
-          <span className="font-sans font-bold text-xs">Aktivitas</span>
+      {/* CENTER SECTION: LETS GO STYLE */}
+      <div className="hidden lg:flex flex-col items-center text-center flex-1 mx-4">
+        <h2 className="text-base font-black text-[#006492] uppercase tracking-[0.2em]">
+          LETS GO
+        </h2>
+        <p className="text-[10px] font-bold text-slate-500 uppercase tracking-tight opacity-80">
+          {adminRegion} • Logistik Efisien Terintegrasi & Solutif
+        </p>
+      </div>
+
+      {/* RIGHT SECTION: ACTIONS & USER */}
+      <div className="flex items-center gap-6">
+        <button className="relative p-2 rounded-full hover:bg-slate-100 text-slate-400 transition-colors cursor-pointer">
+          <Bell className="h-5 w-5" />
+          <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-anomaly-red rounded-full border-2 border-white"></span>
         </button>
 
-        <div className="h-6 w-px bg-border/80"></div>
+        <div className="flex items-center gap-3 pl-4 border-l border-slate-200">
+          <div className="flex flex-col text-right">
+            <span className="font-bold text-xs text-slate-800 leading-tight uppercase">
+              {adminName.split(' ')[0]}
+            </span>
+            <span className="px-1.5 py-0.5 rounded bg-slate-100 text-slate-500 text-[8px] font-black uppercase tracking-tighter mt-0.5">
+              {adminRole}
+            </span>
+          </div>
 
-        <div className="flex items-center gap-3">
-          {isLoading ? (
-            <Loader2 className="h-4 w-4 animate-spin text-pln-cyan" />
-          ) : (
-            <div className="flex flex-col text-right">
-              <span className="font-sans font-bold text-xs text-foreground leading-tight">{adminName}</span>
-              <div className="flex items-center justify-end gap-1.5 mt-0.5">
-                <span className="px-1.5 py-0.2 rounded font-mono text-[9px] bg-pln-darkBlue text-white font-bold uppercase">
-                  {adminRole}
-                </span>
-              </div>
-            </div>
-          )}
-
-          <div className="w-8 h-8 rounded-full bg-pln-darkBlue flex items-center justify-center text-white shadow-sm shrink-0 border border-pln-cyan/20 cursor-pointer hover:scale-105 transition-transform">
-            <User className="h-4 w-4 text-white" />
+          <div className="w-10 h-10 rounded-full bg-[#0070f3] flex items-center justify-center text-white shadow-md border-2 border-white ring-1 ring-slate-100 overflow-hidden cursor-pointer hover:scale-105 transition-transform">
+             <User className="h-5 w-5" />
           </div>
         </div>
       </div>
