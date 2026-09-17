@@ -93,7 +93,7 @@ export default function Topbar() {
         <div className="hidden xl:flex items-center gap-1.5 px-3 py-1 rounded-full bg-pln-iceBlue text-pln-darkBlue border border-pln-cyan/10 shrink-0">
           <Building2 className="h-3.5 w-3.5 text-pln-cyan shrink-0" />
           <span className="font-mono text-[9px] font-bold uppercase tracking-wider">
-            UID BBM • {adminRegion}
+             {adminRegion}
           </span>
         </div>
       </div>

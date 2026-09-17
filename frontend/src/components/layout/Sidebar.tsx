@@ -29,109 +29,111 @@ export default function Sidebar() {
 
   return (
     <aside className={cn(
-      "fixed left-0 top-0 h-screen bg-pln-darkBlue text-white z-50 flex flex-col justify-between select-none shadow-md font-sans transition-all duration-300",
+      "fixed left-0 top-0 h-screen bg-pln-darkBlue text-white z-50 flex flex-col justify-between select-none shadow-xl font-sans transition-all duration-300 ease-in-out",
       isSidebarCollapsed ? "w-20" : "w-64"
     )}>
-      <div className="flex flex-col">
-        {/* Header Logo Brand - PLN NUSA DAYA UPKAL 2 */}
+      <div className="flex flex-col flex-1 overflow-hidden">
+        {/* Header Logo - Modern Minimalist */}
         <div className={cn(
-          "h-24 px-4 flex items-center border-b border-white/10 relative transition-all duration-300",
-          isSidebarCollapsed ? "justify-center px-0" : "gap-3 bg-black/10"
+          "h-20 flex items-center px-4 relative border-b border-white/5 bg-black/5",
+          isSidebarCollapsed ? "justify-center" : "gap-3"
         )}>
           <div className={cn(
-            "rounded bg-white p-1.5 flex items-center justify-center shrink-0 shadow-sm transition-all duration-300",
+            "rounded-lg bg-white p-1.5 flex items-center justify-center shrink-0 shadow-sm transition-all duration-300",
             isSidebarCollapsed ? "w-10 h-10" : "w-12 h-12"
           )}>
             <img src="/logo-pln.png" alt="PLN" className="w-full h-auto object-contain" onError={(e) => {
               e.currentTarget.style.display = 'none';
-              e.currentTarget.parentElement!.innerHTML = '<span class="text-pln-darkBlue font-black text-[10px] text-center">PLN</span>';
+              e.currentTarget.parentElement!.innerHTML = '<span class="text-pln-darkBlue font-black text-[10px]">PLN</span>';
             }} />
           </div>
 
           {!isSidebarCollapsed && (
-            <div className="flex flex-col min-w-0">
-              <span className="font-sans font-black text-[11px] text-white tracking-tighter leading-tight uppercase">
+            <div className="flex flex-col min-w-0 animate-in fade-in slide-in-from-left-2 duration-300">
+              <span className="font-bold text-[12px] text-white tracking-tight uppercase leading-none">
                 PLN NUSA DAYA
               </span>
-              <span className="font-sans text-[9px] text-pln-cyan font-bold uppercase tracking-tight leading-none mt-0.5">
-                Unit Pelaksana Kalimantan 2
+              <span className="text-[9px] text-pln-cyan font-medium uppercase tracking-tighter mt-1 opacity-80">
+                UPK Kalimantan 2
               </span>
             </div>
           )}
+        </div>
 
-          {/* Tombol Mekanis Buka/Tutup */}
-          <button
-            onClick={toggleSidebar}
-            className={cn(
-              "absolute -right-3 top-10 w-6 h-6 rounded-full bg-pln-cyan text-white flex items-center justify-center shadow-lg hover:scale-110 active:scale-95 transition-all z-50",
-              isSidebarCollapsed && "rotate-180"
+        {/* Menu Section */}
+        <div className="flex-1 py-6 overflow-y-auto no-scrollbar">
+          <nav className="flex flex-col gap-1 px-3">
+            {!isSidebarCollapsed && (
+              <span className="px-3 mb-2 text-[10px] font-bold text-white/20 uppercase tracking-[0.2em]">
+                Main Menu
+              </span>
             )}
-          >
-            <ChevronLeft className="h-4 w-4" />
-          </button>
-        </div>
 
-        {/* Menu Section Kategori */}
-        <div className={cn("px-4 pt-5 pb-1.5", isSidebarCollapsed && "text-center px-0")}>
-          <span className="font-mono text-[10px] text-pln-iceBlue/50 uppercase tracking-widest font-bold">
-            {isSidebarCollapsed ? "•••" : "Menu Utama"}
-          </span>
-        </div>
+            {menuItems.map((item) => {
+              const IconComponent = item.icon;
+              const isActive = pathname.startsWith(item.href);
 
-        {/* Link Navigasi Menu */}
-        <nav className="flex flex-col gap-1 px-2.5">
-          {menuItems.map((item) => {
-            const IconComponent = item.icon;
-            const isActive = pathname.startsWith(item.href);
-
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                title={isSidebarCollapsed ? item.label : ""}
-                className={cn(
-                  "flex items-center rounded-[4px] text-xs font-medium transition-all duration-150 relative group",
-                  isSidebarCollapsed ? "justify-center p-2.5 h-10" : "justify-between px-3 py-2",
-                  isActive
-                    ? "bg-pln-cyan text-white shadow-sm font-semibold"
-                    : "text-pln-iceBlue/80 hover:bg-white/5 hover:text-white"
-                )}
-              >
-                <div className="flex items-center gap-2.5">
-                  <IconComponent className={cn("h-4 w-4 shrink-0", isActive ? "text-white" : "text-pln-iceBlue/60")} />
-                  {!isSidebarCollapsed && <span className="truncate">{item.label}</span>}
-                </div>
-
-                {!isSidebarCollapsed && item.badge && (
-                  <span className="inline-flex items-center px-1.5 py-0.5 rounded-full font-mono text-[9px] font-bold bg-anomaly-red text-white shadow-sm">
-                    {item.badge}
-                  </span>
-                )}
-
-                {/* Tooltip for Collapsed State */}
-                {isSidebarCollapsed && (
-                  <div className="absolute left-14 px-2 py-1 bg-pln-darkBlue border border-white/10 rounded text-[10px] font-bold text-white whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity z-50">
-                    {item.label}
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  title={isSidebarCollapsed ? item.label : ""}
+                  className={cn(
+                    "flex items-center rounded-lg transition-all duration-200 relative group",
+                    isSidebarCollapsed ? "justify-center h-12" : "px-3 py-2.5",
+                    isActive
+                      ? "bg-white/10 text-pln-cyan shadow-sm"
+                      : "text-white/60 hover:text-white hover:bg-white/5"
+                  )}
+                >
+                  <div className="flex items-center gap-3">
+                    <IconComponent className={cn(
+                      "h-5 w-5 shrink-0 transition-colors",
+                      isActive ? "text-pln-cyan" : "text-white/40 group-hover:text-white/80"
+                    )} />
+                    {!isSidebarCollapsed && (
+                      <span className={cn(
+                        "text-xs font-semibold tracking-wide",
+                        isActive ? "text-white" : ""
+                      )}>
+                        {item.label}
+                      </span>
+                    )}
                   </div>
-                )}
-              </Link>
-            );
-          })}
-        </nav>
+
+                  {!isSidebarCollapsed && item.badge && (
+                    <span className="ml-auto inline-flex items-center px-1.5 py-0.5 rounded font-mono text-[8px] font-bold bg-anomaly-red text-white">
+                      {item.badge}
+                    </span>
+                  )}
+
+                  {/* Tooltip for Collapsed State */}
+                  {isSidebarCollapsed && (
+                    <div className="absolute left-16 px-2.5 py-1.5 bg-[#0b1c30] border border-white/10 rounded-md text-[10px] font-bold text-white whitespace-nowrap opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 pointer-events-none transition-all z-50 shadow-2xl uppercase tracking-widest">
+                      {item.label}
+                    </div>
+                  )}
+                </Link>
+              );
+            })}
+          </nav>
+        </div>
       </div>
 
-      {/* Footer Logout */}
-      <div className="p-3 flex flex-col gap-2 border-t border-white/5 bg-black/5">
+      {/* Footer - Minimalist Logout */}
+      <div className="p-3 bg-black/10 border-t border-white/5">
         <button
           onClick={() => logoutUser()}
           title={isSidebarCollapsed ? "Keluar Portal" : ""}
           className={cn(
-            "flex items-center justify-center gap-2 py-1.5 w-full rounded-[4px] font-sans text-[11px] font-medium text-pln-iceBlue/60 hover:bg-anomaly-red/10 hover:text-anomaly-red border border-transparent hover:border-anomaly-red/20 transition-all duration-150",
-            isSidebarCollapsed ? "p-2" : "px-3"
+            "flex items-center justify-center gap-2 py-2.5 w-full rounded-lg text-[11px] font-bold transition-all duration-200 uppercase tracking-widest",
+            isSidebarCollapsed
+              ? "text-white/20 hover:text-anomaly-red"
+              : "text-white/40 hover:bg-anomaly-red/10 hover:text-anomaly-red border border-transparent hover:border-anomaly-red/20"
           )}
         >
-          <LogOut className="h-3.5 w-3.5" />
-          {!isSidebarCollapsed && <span>Keluar Portal</span>}
+          <LogOut className="h-4 w-4" />
+          {!isSidebarCollapsed && <span>Sign Out</span>}
         </button>
       </div>
     </aside>

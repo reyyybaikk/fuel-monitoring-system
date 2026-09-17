@@ -1,29 +1,28 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { getTransactions, updateTransactionStatus } from '@/services/transactionService';
+import { getTransactions, updateTransactionStatus, FuelTransaction } from '@/services/transactionService';
 import { useAuthStore } from '@/store/authStore';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import InteractiveElement from '@/components/ui/InteractiveElement';
-import { FileText, Image as ImageIcon, AlertTriangle, Loader2, SearchX, User, Calendar, ExternalLink, MapPin } from 'lucide-react';
+import { FileText, Image as ImageIcon, AlertTriangle, Loader2, Search, User, Calendar, ExternalLink, MapPin } from 'lucide-react';
 import AuthenticatedImage from '@/components/ui/AuthenticatedImage';
 import api from '@/services/api';
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
 import toast from 'react-hot-toast';
 
-export default function TransactionsPage() {
+function TransactionsContent() {
   const queryClient = useQueryClient();
   const searchParams = useSearchParams();
   const { userProfile } = useAuthStore();
   const searchQuery = searchParams.get('q') || '';
   const [mounted, setMounted] = useState(false);
   const [selectedRegion, setSelectedRegion] = useState<string>('ALL');
-
   const [selectedTxId, setSelectedTxId] = useState<string | null>(null);
 
   useEffect(() => {
@@ -33,7 +32,7 @@ export default function TransactionsPage() {
 
   const isPusat = userProfile?.role === 'ADMIN_PUSAT';
 
-  const { data: serverTransactions, isLoading, isRefetching } = useQuery({
+  const { data: serverTransactions, isLoading, isRefetching } = useQuery<FuelTransaction[]>({
     queryKey: ['transactions', searchQuery, selectedRegion],
     queryFn: async () => {
       const response = await api.get('/api/fuel-transactions/history', {
@@ -91,7 +90,6 @@ export default function TransactionsPage() {
         </div>
 
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
-          {/* FILTER WILAYAH KHUSUS ADMIN PUSAT PADA TRANSAKSI */}
           {isPusat && (
             <div className="flex items-center gap-2 px-3 py-1 bg-pln-iceBlue/40 border border-pln-cyan/20 rounded-[4px]">
               <MapPin className="h-3.5 w-3.5 text-pln-cyan" />
@@ -173,7 +171,7 @@ export default function TransactionsPage() {
             </div>
           ) : (
             <div className="flex flex-col items-center justify-center h-80 gap-3 opacity-50 text-center">
-              <SearchX className="h-10 w-10 text-muted-foreground" />
+              <Search className="h-10 w-10 text-muted-foreground" />
               <p className="text-xs font-medium text-muted-foreground">Tidak ada data transaksi.</p>
             </div>
           )}
@@ -329,5 +327,18 @@ export default function TransactionsPage() {
 
       </div>
     </div>
+  );
+}
+
+export default function TransactionsPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-[60vh] flex flex-col items-center justify-center gap-2">
+        <Loader2 className="h-8 w-8 text-pln-cyan animate-spin" />
+        <p className="text-xs font-medium text-pln-darkBlue">Memuat Modul Audit...</p>
+      </div>
+    }>
+      <TransactionsContent />
+    </Suspense>
   );
 }

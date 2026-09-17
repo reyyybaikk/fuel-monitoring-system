@@ -116,7 +116,7 @@ export default function VehiclesPage() {
             {!isPusat && <span className="text-pln-cyan ml-1"> - {userProfile?.region?.replace('Unit Layanan ', '')}</span>}
           </h1>
           <p className="text-xs text-muted-foreground mt-0.5 font-medium">
-            {isPusat ? 'Pantau dan kelola seluruh aset kendaraan operasional lintas wilayah.' : 'Pengelolaan aset kendaraan operasional khusus wilayah otoritas Anda.'}
+            {isPusat ? 'Pantau dan kelola seluruh aset kendaraan operasional lintas wilayah.' : 'Pengelolaan aset kendaraan operasional.'}
           </p>
         </div>
 
@@ -148,57 +148,60 @@ export default function VehiclesPage() {
         </div>
       </div>
 
-      {/* Grid Kendaraan */}
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
         {vehicles.length > 0 ? (
           vehicles.map((vh: any) => (
-            <InteractiveElement key={vh.id} className="bg-white border border-border rounded-[8px] p-4 flex flex-col justify-between hover:border-pln-cyan/40 transition-all shadow-sm group relative overflow-hidden h-52">
-              <div className="flex justify-between items-start mb-3 relative z-10">
-                <div className="flex flex-col">
-                  <span className="font-mono font-bold text-sm text-pln-darkBlue tracking-wide">{vh.license_plate}</span>
-                  <span className="text-[11px] font-semibold text-muted-foreground uppercase">{vh.vehicle_type}</span>
-                </div>
-                <Badge className={vh.is_active ? 'bg-emerald-50 text-emerald-700 border-emerald-100 text-[9px] font-bold' : 'bg-muted text-muted-foreground border-border text-[9px] font-bold'}>
-                  {vh.is_active ? 'TERVERIFIKASI' : 'NONAKTIF'}
-                </Badge>
-              </div>
-
-              <div className="space-y-2 mb-4 relative z-10">
-                <div className="flex items-center justify-between text-[10px] text-muted-foreground font-bold uppercase">
-                  <div className="flex items-center gap-2">
-                    <Building2 className="h-3 w-3 text-pln-cyan/60" />
-                    <span>{vh.ul_nd || vh.ul_pln}</span>
+            <InteractiveElement key={vh.id} className="bg-white border border-border rounded-[8px] p-4 flex flex-col hover:border-pln-cyan/40 transition-all shadow-sm group relative overflow-hidden min-h-[240px]">
+              <div className="flex-1 space-y-3 relative z-10">
+                <div className="flex justify-between items-start">
+                  <div className="flex flex-col max-w-[70%]">
+                    <span className="font-mono font-bold text-sm text-pln-darkBlue tracking-wide truncate" title={vh.license_plate}>{vh.license_plate}</span>
+                    <span className="text-[11px] font-semibold text-muted-foreground uppercase truncate" title={vh.vehicle_type}>{vh.vehicle_type}</span>
                   </div>
-                  {vh.fuel_type && (
-                    <Badge variant="outline" className="text-[8px] h-3.5 border-pln-cyan/30 text-pln-cyan">{vh.fuel_type}</Badge>
+                  <Badge className={vh.is_active ? 'bg-emerald-50 text-emerald-700 border-emerald-100 text-[9px] font-bold shrink-0' : 'bg-muted text-muted-foreground border-border text-[9px] font-bold shrink-0'}>
+                    {vh.is_active ? 'TERVERIFIKASI' : 'NONAKTIF'}
+                  </Badge>
+                </div>
+
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between text-[10px] text-muted-foreground font-bold uppercase gap-2">
+                    <div className="flex items-center gap-1.5 truncate">
+                      <Building2 className="h-3.5 w-3.5 text-pln-cyan/60 shrink-0" />
+                      <span className="truncate">{vh.ul_nd || vh.ul_pln}</span>
+                    </div>
+                    {vh.fuel_type && (
+                      <Badge variant="outline" className="text-[8px] h-4 border-pln-cyan/30 text-pln-cyan bg-pln-iceBlue/20 shrink-0">{vh.fuel_type}</Badge>
+                    )}
+                  </div>
+
+                  {vh.project_name && (
+                    <div className="flex items-center gap-1.5 text-[9px] font-bold text-pln-darkBlue/70 bg-pln-iceBlue/30 p-1.5 rounded border border-pln-cyan/5">
+                      <span className="uppercase tracking-tighter opacity-60 shrink-0">Project:</span>
+                      <span className="truncate" title={vh.project_name}>{vh.project_name}</span>
+                    </div>
                   )}
-                </div>
 
-                {vh.project_name && (
-                  <div className="flex items-center gap-2 text-[9px] font-bold text-pln-darkBlue/70 bg-pln-iceBlue/30 p-1 rounded">
-                    <span className="uppercase tracking-tighter opacity-60">Project:</span>
-                    <span className="truncate">{vh.project_name}</span>
-                  </div>
-                )}
-
-                <div className="grid grid-cols-2 gap-2">
-                  <div className="bg-slate-50 border border-border/50 p-2 rounded text-center">
-                    <span className="block text-[8px] uppercase font-bold text-muted-foreground/60 mb-0.5">Kapasitas</span>
-                    <span className="text-[11px] font-mono font-black text-foreground">{vh.fuel_tank_capacity} L</span>
-                  </div>
-                  <div className="bg-slate-50 border border-border/50 p-2 rounded text-center">
-                    <span className="block text-[8px] uppercase font-bold text-muted-foreground/60 mb-0.5">Rasio BBM</span>
-                    <span className="text-[11px] font-mono font-black text-pln-darkBlue">{vh.fuel_consumption_rate} KM/L</span>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="bg-slate-50 border border-border/50 p-2 rounded text-center">
+                      <span className="block text-[8px] uppercase font-bold text-muted-foreground/60 mb-0.5">Kapasitas</span>
+                      <span className="text-[11px] font-mono font-black text-foreground">{vh.fuel_tank_capacity} L</span>
+                    </div>
+                    <div className="bg-slate-50 border border-border/50 p-2 rounded text-center">
+                      <span className="block text-[8px] uppercase font-bold text-muted-foreground/60 mb-0.5">Rasio BBM</span>
+                      <span className="text-[11px] font-mono font-black text-pln-darkBlue">{vh.fuel_consumption_rate} KM/L</span>
+                    </div>
                   </div>
                 </div>
               </div>
 
-              <button
-                onClick={() => handlePrintQR(vh.license_plate)}
-                className="w-full h-9 text-[10px] font-black rounded-[4px] border border-pln-cyan/20 bg-pln-iceBlue/40 text-pln-darkBlue hover:bg-pln-cyan hover:text-white transition-all flex items-center justify-center gap-2 uppercase tracking-wider shadow-sm active:scale-[0.98]"
-              >
-                <QrCode className="h-4 w-4" /> Cetak QR Driver
-              </button>
+              <div className="mt-4 relative z-10">
+                <button
+                  onClick={() => handlePrintQR(vh.license_plate)}
+                  className="w-full h-9 text-[10px] font-black rounded-[4px] border border-pln-cyan/20 bg-pln-iceBlue/40 text-pln-darkBlue hover:bg-pln-cyan hover:text-white transition-all flex items-center justify-center gap-2 uppercase tracking-wider shadow-sm active:scale-[0.98]"
+                >
+                  <QrCode className="h-4 w-4" /> Cetak QR Driver
+                </button>
+              </div>
 
               <Building2 className="absolute -right-4 -bottom-4 h-16 w-16 text-slate-100 opacity-20 -rotate-12 pointer-events-none" />
             </InteractiveElement>

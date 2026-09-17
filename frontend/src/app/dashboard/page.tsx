@@ -82,16 +82,24 @@ export default function DashboardPage() {
   const recentAnomalies = data?.recent_anomalies ?? [];
   const chartPoints = data?.chart_data ?? [];
 
+  // Hitung skala grafik secara dinamis
+  const maxVal = Math.max(...chartPoints.map(p => p.value), 100); // Minimal skala 100L
+  const getX = (i: number) => {
+    if (chartPoints.length <= 1) return 380; // Center if only 1 point
+    return 40 + i * (680 / (chartPoints.length - 1));
+  };
+  const getY = (val: number) => 150 - (val / maxVal) * 120;
+
   return (
     <div className="space-y-6 font-sans select-none">
       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2 text-pln-darkBlue text-[11px] font-mono font-bold uppercase tracking-wider mb-0.5">
             <span className="w-2 h-2 rounded-full bg-pln-cyan animate-pulse"></span>
-            Audit Operasional {isPusat ? 'Global' : userProfile?.region?.replace('Unit Layanan ', '')} • Live Data
+            Audit Operasional Armada {isPusat ? 'Global' : userProfile?.region?.replace('Unit Layanan ', '')} • Real Time
           </div>
           <h1 className="text-xl font-bold text-foreground tracking-tight">Ringkasan Monitoring BBM</h1>
-          <p className="text-xs text-muted-foreground">Pantauan efisiensi armada dan deteksi AI.</p>
+          <p className="text-xs text-muted-foreground">Pantauan efisiensi armada.</p>
         </div>
 
         <div className="flex items-center gap-3">
@@ -171,8 +179,46 @@ export default function DashboardPage() {
             <svg className="w-full h-full overflow-visible" preserveAspectRatio="none" viewBox="0 0 760 180">
               <line stroke="#eff4ff" strokeWidth="1" x1="0" x2="760" y1="150" y2="150"></line>
               <line stroke="#f6e736" strokeDasharray="4,3" strokeWidth="1.5" x1="0" x2="760" y1="40" y2="40"></line>
+
               {chartPoints.length > 0 && (
-                <path d={`M ${chartPoints.map((p, i) => `${40 + i * 115},${150 - (p.value / 3000) * 120}`).join(' L ')}`} fill="none" stroke="#156075" strokeWidth="2.5" />
+                <>
+                  <path
+                    d={chartPoints.length === 1
+                      ? `M 380,150 L 380,${getY(chartPoints[0].value)}`
+                      : `M ${chartPoints.map((p, i) => `${getX(i)},${getY(p.value)}`).join(' L ')}`}
+                    fill="none"
+                    stroke="#156075"
+                    strokeWidth="2.5"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                  {/* Titik data */}
+                  {chartPoints.map((p, i) => (
+                    <circle
+                      key={i}
+                      cx={getX(i)}
+                      cy={getY(p.value)}
+                      r="4"
+                      fill={p.is_anomaly ? "#ef4444" : "#156075"}
+                      stroke="white"
+                      strokeWidth="2"
+                    />
+                  ))}
+                  {/* Label Hari */}
+                  {chartPoints.map((p, i) => (
+                    <text
+                      key={`label-${i}`}
+                      x={getX(i)}
+                      y="170"
+                      textAnchor="middle"
+                      fontSize="9"
+                      fontWeight="bold"
+                      fill="#94a3b8"
+                    >
+                      {p.day}
+                    </text>
+                  ))}
+                </>
               )}
             </svg>
           </div>
