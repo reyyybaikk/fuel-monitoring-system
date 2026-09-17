@@ -32,7 +32,13 @@ export default function TransactionReviewPage() {
   const queryClient = useQueryClient();
   const txId = params.id as string;
 
-  const [formData, setFormData] = useState<Partial<FuelTransaction>>({});
+  const [formData, setFormData] = useState<Partial<FuelTransaction>>({
+    fuel_amount: 0,
+    odometer: 0,
+    total_cost: 0,
+    fuel_type: '',
+    notes: ''
+  });
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
