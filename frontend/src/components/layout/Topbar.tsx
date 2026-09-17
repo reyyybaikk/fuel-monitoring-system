@@ -1,5 +1,7 @@
+'use client';
+
 import React, { useState, useEffect } from 'react';
-import { useRouter, usePathname, useSearchParams } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuthStore } from '@/store/authStore';
 import { useUIStore } from '@/store/uiStore';
 import { getMe } from '@/services/authService';
@@ -59,15 +61,47 @@ export default function Topbar() {
           <Menu className="h-5 w-5" />
         </button>
 
-       
+        <div className="flex items-center gap-3">
+          {/* Logo PLN */}
+          <img src="/logo-pln.png" alt="PLN" className="h-9 w-auto object-contain" />
+          <div className="flex flex-col leading-none">
+            <span className="font-black text-[12px] text-pln-darkBlue tracking-tighter">PLN</span>
+            <span className="text-[10px] font-bold text-pln-cyan">Nusa Daya</span>
+          </div>
+
+          <div className="h-8 w-px bg-slate-200 mx-1"></div>
+
+          {/* Logo Danantara */}
+          <div className="relative flex items-center gap-2">
+            <img
+              src="/logo-danantara.png"
+              alt="Danantara"
+              className="h-8 w-auto object-contain"
+              onError={(e) => {
+                e.currentTarget.style.display = 'none';
+                e.currentTarget.nextElementSibling?.classList.remove('hidden');
+              }}
+            />
+            <div className="hidden flex items-center gap-2">
+              <div className="w-7 h-7 rounded bg-[#0b1c30] flex items-center justify-center text-white">
+                 <Zap className="h-3.5 w-3.5 text-[#FFE600]" />
+              </div>
+              <div className="flex flex-col leading-none">
+                <span className="font-bold text-[10px] text-slate-800 uppercase tracking-tighter">Danantara</span>
+                <span className="text-[8px] font-medium text-slate-500 uppercase">Indonesia</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
 
       {/* CENTER SECTION: LETS GO STYLE */}
       <div className="hidden lg:flex flex-col items-center text-center flex-1 mx-4">
         <h2 className="text-base font-black text-[#006492] uppercase tracking-[0.2em]">
-          Fuel Monitoring
+          LETS GO
         </h2>
         <p className="text-[10px] font-bold text-slate-500 uppercase tracking-tight opacity-80">
-          {adminRegion} • Monitoring BBM Efisien Terintegrasi
+          {adminRegion} • Logistik Efisien Terintegrasi & Solutif
         </p>
       </div>
 
