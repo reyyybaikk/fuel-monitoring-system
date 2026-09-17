@@ -183,10 +183,30 @@ class FuelTransactionService {
   }
 
   async getSummary(user, query = {}) {
-    // Jika Admin Pusat memberikan filter manual ul_nd, prioritaskan itu.
-    // Jika Admin Wilayah, gunakan wilayah dari profil user (paksa di repository)
-    const filterRegion = user.role === 'ADMIN_PUSAT' ? (query.ul_nd || null) : user.region;
-    return await fuelTransactionRepository.getSummary(user.role, filterRegion);
+    const { range = '7d', ul_nd } = query;
+
+    // Tentukan filter wilayah
+    const filterRegion = user.role === 'ADMIN_PUSAT' ? (ul_nd || null) : user.region;
+
+    // Tentukan rentang waktu untuk grafik
+    let days = 7;
+    if (range === '1d') days = 1;
+    if (range === '30d') days = 30;
+
+    const end = new Date();
+    const start = new Date();
+    start.setDate(start.getDate() - days);
+
+    // Ambil data summary dan analytics secara paralel
+    const [summary, chartData] = await Promise.all([
+      fuelTransactionRepository.getSummary(user.role, filterRegion),
+      fuelTransactionRepository.getAnalytics(start.toISOString(), end.toISOString(), user.role, filterRegion)
+    ]);
+
+    return {
+      ...summary,
+      chart_data: chartData
+    };
   }
 
   async getExportPreview(query, user) {
