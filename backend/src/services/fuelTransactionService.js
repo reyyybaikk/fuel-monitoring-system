@@ -203,10 +203,9 @@ class FuelTransactionService {
     const PDFDocument = require('pdfkit');
     const axios = require('axios');
 
-    // 1. Fetch Data
     const filters = {
       vehicle_id: query.vehicle_id === 'ALL' ? null : query.vehicle_id,
-      ul_nd: user.region || null,
+      ul_nd: user.role === 'ADMIN_PUSAT' ? (query.ul_nd || null) : user.region,
       start_date: query.start_date,
       end_date: query.end_date
     };
@@ -216,130 +215,132 @@ class FuelTransactionService {
 
     return new Promise(async (resolve, reject) => {
       try {
-        const doc = new PDFDocument({ margin: 30, size: 'A4' });
+        // A4 Margin 15mm approx 42.5 points
+        const doc = new PDFDocument({ margin: 42, size: 'A4' });
         let buffers = [];
         doc.on('data', buffers.push.bind(buffers));
         doc.on('end', () => resolve(Buffer.concat(buffers)));
 
-        // --- HEADER (REVISI: SEDERHANA TANPA KOP SURAT) ---
-        doc.fontSize(10).font('Helvetica-Bold');
-        const displayRegion = user.region ? `UL ${user.region.replace('Unit Layanan ', '')}` : 'UPKAL2 REGIONAL';
-        doc.text(`Unit Layanan   : ${displayRegion}`.toUpperCase());
-        doc.text(`Periode Audit  : ${query.start_date} s/d ${query.end_date}`);
-        doc.text(`Model Kendaraan: ${vehicle ? `${vehicle.license_plate} - ${vehicle.vehicle_type}` : 'Seluruh Armada'}`.toUpperCase());
-        doc.moveDown(2);
+        // --- 1. HEADER (Identik dengan Web Preview) ---
+        doc.fontSize(9).font('Helvetica-Bold');
+        const displayRegion = filters.ul_nd ? `UL ${filters.ul_nd.replace('Unit Layanan ', '')}` : 'UPKAL2 REGIONAL';
 
-        // --- TABLE HEADER (REVISI KOLOM) ---
+        doc.fillColor('#4b5563').text('Unit Layanan', { continued: true }).fillColor('black').text(` : ${displayRegion}`.toUpperCase());
+        doc.fillColor('#4b5563').text('Periode Audit', { continued: true }).fillColor('black').text(` : ${query.start_date} s/d ${query.end_date}`);
+        const vInfo = vehicle ? `${vehicle.license_plate} - ${vehicle.vehicle_type}` : (query.vehicle_id === 'ALL' ? 'Seluruh Armada' : 'Laporan Kolektif');
+        doc.fillColor('#4b5563').text('Model Kendaraan', { continued: true }).fillColor('black').text(` : ${vInfo}`.toUpperCase());
+
+        doc.moveDown(1);
+        doc.moveTo(42, doc.y).lineTo(553, doc.y).strokeColor('#cbd5e1').stroke();
+        doc.moveDown(1.5);
+
+        // --- 2. TABEL LOG TRANSAKSI ---
+        doc.fontSize(9).font('Helvetica-Bold').fillColor('#1e293b').text('LOG TRANSAKSI BAHAN BAKAR', { characterSpacing: 1 });
+        doc.moveDown(0.5);
+
         const tableTop = doc.y;
-        doc.font('Helvetica-Bold').fontSize(7);
-        doc.text('No', 30, tableTop);
-        doc.text('Tanggal', 45, tableTop);
-        doc.text('No. Pol / Pelat', 85, tableTop);
-        doc.text('Stand Awal/Odo', 155, tableTop);
-        doc.text('Stand Akhir/Odo', 225, tableTop);
-        doc.text('Liter / Jenis BBM', 285, tableTop);
-        doc.text('Total Rupiah Pembelian', 385, tableTop);
+        doc.fontSize(7).font('Helvetica-Bold').fillColor('black');
 
-        doc.moveTo(30, tableTop + 10).lineTo(565, tableTop + 10).stroke();
+        // Headers
+        doc.text('No', 42, tableTop, { width: 20 });
+        doc.text('Tanggal', 65, tableTop, { width: 50 });
+        doc.text('No. Pol / Pelat', 115, tableTop, { width: 80 });
+        doc.text('Stand Awal/Odo', 195, tableTop, { width: 70 });
+        doc.text('Stand Akhir/Odo', 265, tableTop, { width: 70 });
+        doc.text('Liter / Jenis BBM', 335, tableTop, { width: 90 });
+        doc.text('Total Rupiah Pembelian', 425, tableTop, { width: 128 });
 
-        // --- TABLE ROWS ---
-        let y = tableTop + 15;
+        doc.moveTo(42, tableTop + 12).lineTo(553, tableTop + 12).strokeColor('#94a3b8').stroke();
+
+        let y = tableTop + 20;
         if (transactions.length === 0) {
-          doc.font('Helvetica-Oblique').text('Tidak ditemukan data transaksi untuk periode ini.', 30, y);
+          doc.font('Helvetica-Oblique').text('Tidak ditemukan data transaksi.', 42, y);
         } else {
           transactions.forEach((tx, i) => {
             if (y > 750) { doc.addPage(); y = 50; }
             doc.font('Helvetica').fontSize(7);
-            doc.text(i + 1, 30, y, { width: 15, align: 'center' });
-            doc.text(new Date(tx.created_at).toLocaleDateString('id-ID'), 45, y);
-            doc.text(tx.license_plate, 85, y);
-            doc.text(`${Number(tx.odometer).toLocaleString('id-ID')} Km`, 155, y);
-            doc.text(tx.odometer_next ? `${Number(tx.odometer_next).toLocaleString('id-ID')} Km` : '-', 225, y);
-            doc.text(`${tx.fuel_amount} L / ${tx.fuel_type || 'BBM'}`, 285, y);
-            doc.text(`Rp ${Number(tx.total_cost).toLocaleString('id-ID')}`, 385, y);
-            y += 12;
+            doc.text(i + 1, 42, y, { width: 20 });
+            doc.text(new Date(tx.created_at).toLocaleDateString('id-ID'), 65, y);
+            doc.text(tx.license_plate, 115, y);
+            doc.text(`${Number(tx.odometer).toLocaleString('id-ID')} Km`, 195, y);
+            doc.text(tx.odometer_next ? `${Number(tx.odometer_next).toLocaleString('id-ID')} Km` : '-', 265, y);
+            doc.text(`${tx.fuel_amount} L / ${tx.fuel_type || 'BBM'}`, 335, y);
+            doc.text(`Rp ${Number(tx.total_cost).toLocaleString('id-ID')}`, 425, y);
+            y += 15;
           });
         }
 
-        // --- LAMPIRAN BUKTI FISIK (3 FOTO PER TRANSAKSI) ---
+        // --- 3. LAMPIRAN BUKTI FISIK (Identik Web Layout) ---
         if (transactions.length > 0) {
           doc.addPage();
-          doc.fontSize(10).font('Helvetica-Bold').text('LAMPIRAN BUKTI FISIK TRANSAKSI', { align: 'left' });
-          doc.moveDown();
+          doc.fontSize(10).font('Helvetica-Bold').text('LAMPIRAN BUKTI FISIK TRANSAKSI');
+          doc.moveDown(0.2);
+          doc.moveTo(42, doc.y).lineTo(180, doc.y).strokeColor('black').stroke();
+          doc.moveDown(1.5);
 
           for (const [index, tx] of transactions.entries()) {
-            if (doc.y > 550) doc.addPage();
+            // Check remaining space for a full entry (Approx 200 units needed)
+            if (doc.y > 600) doc.addPage();
 
-            doc.fontSize(9).font('Helvetica-Bold').text(`DATA TRANSAKSI #${index + 1} - ${tx.license_plate}`, 30, doc.y, { underline: true });
-            doc.moveDown(0.5);
+            const entryTop = doc.y;
+            doc.fontSize(8).font('Helvetica-Bold').fillColor('#1e293b');
+            doc.rect(42, entryTop, 511, 15).fill('#f1f5f9');
+            doc.fillColor('black').text(`DATA #${index + 1} - ${tx.license_plate} • ${new Date(tx.created_at).toLocaleString('id-ID')}`, 48, entryTop + 4);
 
-            const startX = 30;
-            const currentY = doc.y;
+            doc.moveDown(1);
+            const imageY = doc.y;
+            const imageWidth = 165;
+            const imageHeight = 110;
+            const gap = 8;
 
-            // --- TATA LETAK ASIMETRIS (LANDSCAPE & PORTRAIT) ---
-
-            // 1. Odo Sebelum & Sesudah (LANDSCAPE - Baris Atas)
-            const odoWidth = 265;
-            const odoHeight = 150;
-
-            const odos = [
-              { key: 'odometer_photo_path', label: '1. Odometer Awal (Landscape)', x: startX },
-              { key: 'odometer_after_photo_path', label: '2. Odometer Akhir (Landscape)', x: startX + odoWidth + 5 }
+            const photoTypes = [
+              { key: 'odometer_photo_path', label: '1. Odo Sebelum' },
+              { key: 'odometer_after_photo_path', label: '2. Odo Sesudah' },
+              { key: 'receipt_photo_path', label: '3. Nota / Struk' }
             ];
 
-            for (const odo of odos) {
-              doc.fontSize(7).font('Helvetica-Bold').text(odo.label, odo.x, currentY, { width: odoWidth, align: 'center' });
-              const imgPath = tx[odo.key];
+            for (let i = 0; i < photoTypes.length; i++) {
+              const photo = photoTypes[i];
+              const xPos = 42 + (i * (imageWidth + gap));
+
+              // Header Label Box
+              doc.fontSize(6).font('Helvetica-Bold').fillColor('#4b5563');
+              doc.rect(xPos, imageY, imageWidth, 12).fill('#f8fafc');
+              doc.fillColor('#4b5563').text(photo.label, xPos, imageY + 3, { width: imageWidth, align: 'center' });
+
+              const imgPath = tx[photo.key];
               if (imgPath) {
                 try {
                   let imgUrl = imgPath.startsWith('http') ? imgPath : `https://jgqpxhoyqrfvspmpopqa.supabase.co/storage/v1/object/public/uploads/${imgPath}`;
-                  const response = await axios.get(imgUrl, { responseType: 'arraybuffer', timeout: 8000 });
-                  doc.image(response.data, odo.x, currentY + 10, { fit: [odoWidth, odoHeight], align: 'center', valign: 'center' });
+                  const response = await axios.get(imgUrl, { responseType: 'arraybuffer', timeout: 10000 });
+                  doc.image(response.data, xPos, imageY + 14, { fit: [imageWidth, imageHeight], align: 'center', valign: 'center' });
+                  // Draw Border for Image
+                  doc.rect(xPos, imageY + 14, imageWidth, imageHeight).strokeColor('#cbd5e1').stroke();
                 } catch (err) {
-                  doc.fontSize(6).fillColor('red').text('[Gagal memuat]', odo.x, currentY + 50, { width: odoWidth, align: 'center' }).fillColor('black');
+                  doc.fontSize(6).fillColor('red').text('[Gagal memuat bukti]', xPos, imageY + 50, { width: imageWidth, align: 'center' }).fillColor('black');
                 }
+              } else {
+                doc.fontSize(6).fillColor('#94a3b8').text('[Tanpa Berkas]', xPos, imageY + 50, { width: imageWidth, align: 'center' });
               }
             }
 
-            // 2. Struk/Nota (PORTRAIT - Baris Bawah)
-            const receiptY = currentY + odoHeight + 25;
-            const receiptWidth = 200; // Lebih ramping karena Portrait
-            const receiptHeight = 280; // Lebih tinggi
-            const receiptX = (595 - receiptWidth) / 2; // Center horizontal di kertas A4
-
-            doc.fontSize(7).font('Helvetica-Bold').text('3. Nota / Struk Pembelian (Portrait)', 30, receiptY, { width: 535, align: 'center' });
-
-            if (tx.receipt_photo_path) {
-              try {
-                let imgUrl = tx.receipt_photo_path.startsWith('http') ? tx.receipt_photo_path : `https://jgqpxhoyqrfvspmpopqa.supabase.co/storage/v1/object/public/uploads/${tx.receipt_photo_path}`;
-                const response = await axios.get(imgUrl, { responseType: 'arraybuffer', timeout: 8000 });
-                doc.image(response.data, receiptX, receiptY + 10, { fit: [receiptWidth, receiptHeight], align: 'center' });
-                doc.y = receiptY + receiptHeight + 20; // Update cursor Y ke bawah struk
-              } catch (err) {
-                doc.fontSize(6).fillColor('red').text('[Gagal memuat struk]', 30, receiptY + 50, { width: 535, align: 'center' }).fillColor('black');
-                doc.y = receiptY + 70;
-              }
-            } else {
-               doc.y = receiptY + 20;
-            }
-
-            doc.moveDown(2);
+            doc.y = imageY + imageHeight + 25;
           }
         }
 
-        // --- PENGESAHAN (FOOTER) ---
+        // --- 4. PENGESAHAN (Identik Web Layout) ---
         if (doc.y > 700) doc.addPage();
-        doc.moveDown(3);
+        doc.moveDown(4);
         const footerY = doc.y;
         doc.fontSize(9).font('Helvetica-Bold');
 
-        doc.text('Mengetahui,', 50, footerY);
-        doc.text('Manajer Unit Layanan', 50, footerY + 12);
-        doc.text('( ............................ )', 50, footerY + 70);
+        doc.text('Mengetahui,', 42, footerY, { align: 'center', width: 200 });
+        doc.font('Helvetica-Oblique').text('Manajer Unit Layanan', 42, footerY + 12, { align: 'center', width: 200 });
+        doc.font('Helvetica-Bold').text('( ............................ )', 42, footerY + 80, { align: 'center', width: 200 });
 
-        doc.text('Dibuat Oleh,', 400, footerY);
-        doc.text('Admin Pengawas', 400, footerY + 12);
-        doc.text(user.full_name || 'Admin', 400, footerY + 70);
+        doc.text('Dibuat Oleh,', 353, footerY, { align: 'center', width: 200 });
+        doc.font('Helvetica-Oblique').text('Admin Pengawas Wilayah', 353, footerY + 12, { align: 'center', width: 200 });
+        doc.font('Helvetica-Bold').text(user.full_name || 'Admin', 353, footerY + 80, { align: 'center', width: 200 });
 
         doc.end();
       } catch (err) {
