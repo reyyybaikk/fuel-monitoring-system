@@ -95,9 +95,9 @@ const register = async (req, res, next) => {
       throw error;
     }
 
-    const validRoles = ['ADMIN', 'MANAGER', 'DRIVER'];
+    const validRoles = ['ADMIN_PUSAT', 'ADMIN', 'MANAGER', 'DRIVER'];
     if (!validRoles.includes(role)) {
-      error = new Error('Role tidak valid. Gunakan: ADMIN, MANAGER, atau DRIVER');
+      error = new Error('Role tidak valid. Gunakan: ADMIN_PUSAT, ADMIN, MANAGER, atau DRIVER');
       error.statusCode = 400;
       throw error;
     }

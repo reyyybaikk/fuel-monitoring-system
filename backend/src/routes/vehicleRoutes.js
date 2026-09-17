@@ -122,10 +122,10 @@ router.get('/qrcode/:licensePlate', async (req, res) => {
 // ==========================================
 // 3. ENDPOINT: CRUD MASTER KENDARAAN (Untuk Web Dashboard)
 // ==========================================
-router.get('/', vehicleController.getAll);
-router.get('/:id', vehicleController.getById);
-router.post('/', authenticate, authorize('ADMIN'), vehicleController.create);
-router.put('/:id', authenticate, authorize('ADMIN'), vehicleController.update);
-router.delete('/:id', authenticate, authorize('ADMIN'), vehicleController.remove);
+router.get('/', authenticate, vehicleController.getAll);
+router.get('/:id', authenticate, vehicleController.getById);
+router.post('/', authenticate, authorize('ADMIN_PUSAT', 'ADMIN'), vehicleController.create);
+router.put('/:id', authenticate, authorize('ADMIN_PUSAT', 'ADMIN'), vehicleController.update);
+router.delete('/:id', authenticate, authorize('ADMIN_PUSAT', 'ADMIN'), vehicleController.remove);
 
 module.exports = router;

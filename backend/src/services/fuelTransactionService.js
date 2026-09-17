@@ -79,7 +79,8 @@ class FuelTransactionService {
       fuel_type: query.fuel_type || null,
       is_anomaly: query.is_anomaly !== undefined ? query.is_anomaly : (query.has_anomaly !== undefined ? query.has_anomaly : null),
       role: user.role,
-      userId: user.id
+      userId: user.id,
+      region: user.region
     };
 
     const data = await fuelTransactionRepository.findAll({ limit, offset, ...filters });
@@ -152,18 +153,18 @@ class FuelTransactionService {
     return await fuelTransactionRepository.updateStatus(id, status);
   }
 
-  async getAnalytics(start, end) {
-    return await fuelTransactionRepository.getAnalytics(start, end);
+  async getAnalytics(start, end, user) {
+    return await fuelTransactionRepository.getAnalytics(start, end, user.role, user.region);
   }
 
-  async getSummary() {
-    return await fuelTransactionRepository.getSummary();
+  async getSummary(user) {
+    return await fuelTransactionRepository.getSummary(user.role, user.region);
   }
 
   async getExportPreview(query, user) {
     const filters = {
       vehicle_id: query.vehicle_id === 'ALL' ? null : query.vehicle_id,
-      ul_nd: user.region || null,
+      ul_nd: (user.role === 'ADMIN_WILAYAH' || user.role === 'ADMIN') ? user.region : (query.ul_nd || null),
       start_date: query.start_date,
       end_date: query.end_date
     };

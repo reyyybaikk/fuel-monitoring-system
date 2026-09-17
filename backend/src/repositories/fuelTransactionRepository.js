@@ -104,7 +104,7 @@ class FuelTransactionRepository {
     return result.rows[0];
   }
 
-  async findAll({ limit, offset, vehicle_id, driver_id, status, fuel_type, is_anomaly, start_date, end_date, role, userId }) {
+  async findAll({ limit, offset, vehicle_id, driver_id, status, fuel_type, is_anomaly, start_date, end_date, role, userId, region }) {
     let query = `
       SELECT ft.id, ft.vehicle_id, v.license_plate, v.vehicle_type, v.ul_nd as region, ft.driver_id, u.full_name as driver_name, 
              ft.filling_source, ft.fuel_type, ft.fuel_amount, ft.odometer, ft.total_cost, 
@@ -124,12 +124,23 @@ class FuelTransactionRepository {
     const values = [];
     let paramIndex = 1;
 
-    // Proteksi IDOR & Filter
+    // Filter berdasarkan Role & Wilayah (Hak Akses)
     if (role === 'DRIVER') {
       query += ` AND ft.driver_id = $${paramIndex}`;
       values.push(userId);
       paramIndex++;
-    } else if (driver_id) {
+    } else if (role === 'ADMIN_WILAYAH' || role === 'ADMIN') {
+      // Jika Admin Wilayah, kunci data hanya untuk wilayahnya
+      if (region) {
+        const cleanRegion = region.replace('Unit Layanan ', '').trim();
+        query += ` AND (v.ul_nd ILIKE $${paramIndex} OR v.ul_pln ILIKE $${paramIndex})`;
+        values.push(`%${cleanRegion}%`);
+        paramIndex++;
+      }
+    }
+    // Jika role === 'ADMIN_PUSAT', tidak ada filter wilayah (bisa lihat semua)
+
+    if (driver_id) {
       query += ` AND ft.driver_id = $${paramIndex}`;
       values.push(driver_id);
       paramIndex++;
@@ -201,13 +212,30 @@ class FuelTransactionRepository {
     return result.rows;
   }
 
-  async countAll({ vehicle_id, driver_id, status, fuel_type, is_anomaly, role, userId }) {
-    let query = `SELECT COUNT(*) FROM fuel_transactions ft WHERE 1=1`;
+  async countAll({ vehicle_id, driver_id, status, fuel_type, is_anomaly, role, userId, region }) {
+    let query = `
+      SELECT COUNT(*)
+      FROM fuel_transactions ft
+      JOIN vehicles v ON ft.vehicle_id = v.id
+      WHERE 1=1
+    `;
     const values = [];
     let paramIndex = 1;
 
-    if (role === 'DRIVER') { query += ` AND ft.driver_id = $${paramIndex}`; values.push(userId); paramIndex++; }
-    else if (driver_id) { query += ` AND ft.driver_id = $${paramIndex}`; values.push(driver_id); paramIndex++; }
+    if (role === 'DRIVER') {
+      query += ` AND ft.driver_id = $${paramIndex}`;
+      values.push(userId);
+      paramIndex++;
+    } else if (role === 'ADMIN_WILAYAH' || role === 'ADMIN') {
+      if (region) {
+        const cleanRegion = region.replace('Unit Layanan ', '').trim();
+        query += ` AND (v.ul_nd ILIKE $${paramIndex} OR v.ul_pln ILIKE $${paramIndex})`;
+        values.push(`%${cleanRegion}%`);
+        paramIndex++;
+      }
+    }
+
+    if (driver_id) { query += ` AND ft.driver_id = $${paramIndex}`; values.push(driver_id); paramIndex++; }
     if (vehicle_id) { query += ` AND ft.vehicle_id = $${paramIndex}`; values.push(vehicle_id); paramIndex++; }
     if (status) { query += ` AND ft.status = $${paramIndex}`; values.push(status); paramIndex++; }
     if (fuel_type) { query += ` AND ft.fuel_type = $${paramIndex}`; values.push(fuel_type); paramIndex++; }
@@ -268,33 +296,51 @@ class FuelTransactionRepository {
     return result.rows[0];
   }
 
-  async getSummary() {
+  async getSummary(role, region) {
+    let whereClause = 'WHERE 1=1';
+    let vehicleWhereClause = 'WHERE 1=1';
+    const values = [];
+    let paramIndex = 1;
+
+    if (role === 'ADMIN_WILAYAH' || role === 'ADMIN') {
+      if (region) {
+        const cleanRegion = region.replace('Unit Layanan ', '').trim();
+        whereClause += ` AND (v.ul_nd ILIKE $${paramIndex} OR v.ul_pln ILIKE $${paramIndex})`;
+        vehicleWhereClause += ` AND (ul_nd ILIKE $${paramIndex} OR ul_pln ILIKE $${paramIndex})`;
+        values.push(`%${cleanRegion}%`);
+        paramIndex++;
+      }
+    }
+
     const statsQuery = `
       SELECT
-        SUM(fuel_amount) as total_liters,
-        SUM(total_cost) as total_cost,
-        COUNT(CASE WHEN ml_is_anomaly = TRUE THEN 1 END) as anomaly_count
-      FROM fuel_transactions
+        SUM(ft.fuel_amount) as total_liters,
+        SUM(ft.total_cost) as total_cost,
+        COUNT(CASE WHEN ft.ml_is_anomaly = TRUE THEN 1 END) as anomaly_count
+      FROM fuel_transactions ft
+      JOIN vehicles v ON ft.vehicle_id = v.id
+      ${whereClause}
     `;
     const vehicleQuery = `
       SELECT
         COUNT(*) as total_vehicles,
         COUNT(CASE WHEN is_active = TRUE THEN 1 END) as active_vehicles
       FROM vehicles
+      ${vehicleWhereClause}
     `;
     const recentAnomaliesQuery = `
       SELECT ft.id, v.license_plate as plate, ft.ml_anomaly_score as score, ft.notes
       FROM fuel_transactions ft
       JOIN vehicles v ON ft.vehicle_id = v.id
-      WHERE ft.ml_is_anomaly = TRUE
+      ${whereClause} AND ft.ml_is_anomaly = TRUE
       ORDER BY ft.created_at DESC
       LIMIT 5
     `;
 
     const [statsRes, vehicleRes, anomaliesRes] = await Promise.all([
-      db.query(statsQuery),
-      db.query(vehicleQuery),
-      db.query(recentAnomaliesQuery)
+      db.query(statsQuery, values),
+      db.query(vehicleQuery, values),
+      db.query(recentAnomaliesQuery, values)
     ]);
 
     const stats = statsRes.rows[0];
@@ -312,23 +358,37 @@ class FuelTransactionRepository {
     };
   }
 
-  async getAnalytics(start, end) {
+  async getAnalytics(start, end, role, region) {
+    let whereClause = 'WHERE 1=1';
+    const values = [];
+    let paramIndex = 1;
+
+    if (start && end) {
+      whereClause += ` AND ft.created_at BETWEEN $${paramIndex} AND $${paramIndex + 1}`;
+      values.push(start, end);
+      paramIndex += 2;
+    }
+
+    if (role === 'ADMIN_WILAYAH' || role === 'ADMIN') {
+      if (region) {
+        const cleanRegion = region.replace('Unit Layanan ', '').trim();
+        whereClause += ` AND (v.ul_nd ILIKE $${paramIndex} OR v.ul_pln ILIKE $${paramIndex})`;
+        values.push(`%${cleanRegion}%`);
+        paramIndex++;
+      }
+    }
+
     let query = `
       SELECT
-        TO_CHAR(created_at, 'Dy') as day,
-        SUM(fuel_amount) as value,
-        BOOL_OR(ml_is_anomaly) as is_anomaly
-      FROM fuel_transactions
-      WHERE 1=1
-    `;
-    const values = [];
-    if (start && end) {
-      query += ` AND created_at BETWEEN $1 AND $2`;
-      values.push(start, end);
-    }
-    query += ` GROUP BY TO_CHAR(created_at, 'Dy'), DATE_TRUNC('day', created_at)
-               ORDER BY DATE_TRUNC('day', created_at) ASC
-               LIMIT 7`;
+        TO_CHAR(ft.created_at, 'Dy') as day,
+        SUM(ft.fuel_amount) as value,
+        BOOL_OR(ft.ml_is_anomaly) as is_anomaly
+      FROM fuel_transactions ft
+      JOIN vehicles v ON ft.vehicle_id = v.id
+      ${whereClause}
+      GROUP BY TO_CHAR(ft.created_at, 'Dy'), DATE_TRUNC('day', ft.created_at)
+      ORDER BY DATE_TRUNC('day', ft.created_at) ASC
+      LIMIT 7`;
 
     const result = await db.query(query, values);
     return result.rows;
