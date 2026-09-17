@@ -157,8 +157,11 @@ class FuelTransactionService {
     return await fuelTransactionRepository.getAnalytics(start, end, user.role, user.region);
   }
 
-  async getSummary(user) {
-    return await fuelTransactionRepository.getSummary(user.role, user.region);
+  async getSummary(user, query = {}) {
+    // Jika Admin Pusat memberikan filter manual ul_nd, prioritaskan itu.
+    // Jika Admin Wilayah, gunakan wilayah dari profil user (paksa di repository)
+    const filterRegion = user.role === 'ADMIN_PUSAT' ? (query.ul_nd || null) : user.region;
+    return await fuelTransactionRepository.getSummary(user.role, filterRegion);
   }
 
   async getExportPreview(query, user) {
