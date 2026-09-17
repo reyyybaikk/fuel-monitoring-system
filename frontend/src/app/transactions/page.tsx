@@ -4,12 +4,14 @@ import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { getTransactions, updateTransactionStatus } from '@/services/transactionService';
+import { useAuthStore } from '@/store/authStore';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import InteractiveElement from '@/components/ui/InteractiveElement';
-import { FileText, Image as ImageIcon, AlertTriangle, Loader2, SearchX, User, Calendar, ExternalLink } from 'lucide-react';
+import { FileText, Image as ImageIcon, AlertTriangle, Loader2, SearchX, User, Calendar, ExternalLink, MapPin } from 'lucide-react';
 import AuthenticatedImage from '@/components/ui/AuthenticatedImage';
+import api from '@/services/api';
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
 import toast from 'react-hot-toast';
@@ -17,19 +19,33 @@ import toast from 'react-hot-toast';
 export default function TransactionsPage() {
   const queryClient = useQueryClient();
   const searchParams = useSearchParams();
+  const { userProfile } = useAuthStore();
   const searchQuery = searchParams.get('q') || '';
   const [mounted, setMounted] = useState(false);
+  const [selectedRegion, setSelectedRegion] = useState<string>('ALL');
 
   const [selectedTxId, setSelectedTxId] = useState<string | null>(null);
 
   useEffect(() => {
     setMounted(true);
-  }, []);
+    if (userProfile?.region) setSelectedRegion(userProfile.region);
+  }, [userProfile]);
 
-  const { data: serverTransactions, isLoading } = useQuery({
-    queryKey: ['transactions', searchQuery],
-    queryFn: () => getTransactions(searchQuery),
-    enabled: mounted,
+  const isPusat = userProfile?.role === 'ADMIN_PUSAT';
+
+  const { data: serverTransactions, isLoading, isRefetching } = useQuery({
+    queryKey: ['transactions', searchQuery, selectedRegion],
+    queryFn: async () => {
+      const response = await api.get('/api/fuel-transactions/history', {
+        params: {
+          q: searchQuery,
+          ul_nd: isPusat ? (selectedRegion === 'ALL' ? undefined : selectedRegion) : userProfile?.region,
+          limit: 50
+        }
+      });
+      return response.data.data;
+    },
+    enabled: mounted && !!userProfile,
   });
 
   const mutation = useMutation({
@@ -62,17 +78,43 @@ export default function TransactionsPage() {
 
   return (
     <div className="space-y-4 font-sans select-none">
-      <div className="bg-white p-4 rounded-[8px] border border-border flex flex-col sm:flex-row justify-between sm:items-center gap-3 shadow-sm">
+      <div className="bg-white p-4 rounded-[8px] border border-border flex flex-col lg:flex-row justify-between lg:items-center gap-4 shadow-sm">
         <div className="flex flex-col gap-0.5">
           <div className="flex items-center gap-2">
-            <h1 className="text-base font-bold text-foreground">Log Transaksi & Audit BBM</h1>
+            <h1 className="text-base font-bold text-foreground">
+              Log Transaksi & Audit BBM
+              {!isPusat && <span className="text-pln-cyan ml-1"> - {userProfile?.region?.replace('Unit Layanan ', '')}</span>}
+            </h1>
             <Badge className="bg-red-50 text-anomaly-red border border-red-100 text-[9px] font-bold uppercase rounded-[4px] px-1.5 pt-0.5 h-4">Audit Aktif</Badge>
           </div>
           <p className="text-xs text-muted-foreground">Otorisasi klaim BBM dan verifikasi telemetri berbasis AI.</p>
         </div>
-        <button className="h-8 text-xs px-4 font-bold bg-pln-darkBlue text-white rounded-[4px] shadow-sm active:scale-95 transition-all">
-          Ekspor CSV
-        </button>
+
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+          {/* FILTER WILAYAH KHUSUS ADMIN PUSAT PADA TRANSAKSI */}
+          {isPusat && (
+            <div className="flex items-center gap-2 px-3 py-1 bg-pln-iceBlue/40 border border-pln-cyan/20 rounded-[4px]">
+              <MapPin className="h-3.5 w-3.5 text-pln-cyan" />
+              <select
+                value={selectedRegion}
+                onChange={(e) => setSelectedRegion(e.target.value)}
+                className="bg-transparent text-[11px] font-black text-pln-darkBlue uppercase outline-none focus:ring-0 min-w-[150px]"
+              >
+                <option value="ALL">SEMUA WILAYAH (GLOBAL)</option>
+                <option value="Banjarmasin">UL Banjarmasin</option>
+                <option value="Barabai">UL Barabai</option>
+                <option value="Palangkaraya">UL Palangkaraya</option>
+                <option value="Pangkalan Bun">UL Pangkalan Bun</option>
+                <option value="Kapuas">UL Kapuas</option>
+              </select>
+              {isRefetching && <Loader2 className="h-3 w-3 animate-spin text-pln-cyan" />}
+            </div>
+          )}
+
+          <button className="h-9 text-xs px-4 font-black bg-pln-darkBlue text-white rounded-[4px] shadow-sm active:scale-95 transition-all uppercase tracking-wider">
+            Ekspor CSV
+          </button>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 xl:grid-cols-12 gap-4 items-start">

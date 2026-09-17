@@ -4,26 +4,42 @@ import React, { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 import { getDashboardSummary, DashboardSummary } from '@/services/dashboardService';
+import { useAuthStore } from '@/store/authStore';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import InteractiveElement from '@/components/ui/InteractiveElement';
-import { Fuel, Wallet, Truck, AlertTriangle, RefreshCw, ArrowUp, ArrowDown, Loader2, ChevronRight } from 'lucide-react';
+import { Fuel, Wallet, Truck, AlertTriangle, RefreshCw, ArrowUp, ArrowDown, Loader2, ChevronRight, MapPin } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import api from '@/services/api';
 import toast from 'react-hot-toast';
 
 export default function DashboardPage() {
   const router = useRouter();
+  const { userProfile } = useAuthStore();
   const [range, setRange] = useState('7d');
   const [mounted, setMounted] = useState(false);
+  const [selectedRegion, setSelectedRegion] = useState<string>('ALL');
 
   useEffect(() => {
     setMounted(true);
-  }, []);
+    if (userProfile?.region) setSelectedRegion(userProfile.region);
+  }, [userProfile]);
+
+  const isPusat = userProfile?.role === 'ADMIN_PUSAT';
 
   const { data: serverResponse, isLoading, isRefetching, refetch } = useQuery({
-    queryKey: ['dashboardSummary', range],
-    queryFn: () => getDashboardSummary(range),
-    enabled: mounted, // Hanya ambil data jika sudah mounted di browser
+    queryKey: ['dashboardSummary', range, selectedRegion],
+    queryFn: async () => {
+      // Jika Admin Pusat, bisa filter manual. Jika Wilayah, otomatis terkunci di backend.
+      const response = await api.get('/api/fuel-transactions/summary', {
+        params: {
+          range,
+          ul_nd: isPusat ? (selectedRegion === 'ALL' ? undefined : selectedRegion) : undefined
+        }
+      });
+      return response.data;
+    },
+    enabled: mounted && !!userProfile,
   });
 
   const data: DashboardSummary | undefined = serverResponse?.data;
@@ -72,13 +88,32 @@ export default function DashboardPage() {
         <div>
           <div className="flex items-center gap-2 text-pln-darkBlue text-[11px] font-mono font-bold uppercase tracking-wider mb-0.5">
             <span className="w-2 h-2 rounded-full bg-pln-cyan animate-pulse"></span>
-            Audit Operasional Terpadu • Live Data
+            Audit Operasional {isPusat ? 'Global' : userProfile?.region?.replace('Unit Layanan ', '')} • Live Data
           </div>
           <h1 className="text-xl font-bold text-foreground tracking-tight">Ringkasan Monitoring BBM</h1>
           <p className="text-xs text-muted-foreground">Pantauan efisiensi armada dan deteksi AI.</p>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-3">
+          {/* FILTER WILAYAH KHUSUS ADMIN PUSAT PADA DASHBOARD */}
+          {isPusat && (
+            <div className="flex items-center gap-2 px-3 py-1 bg-white border border-border rounded-md shadow-sm">
+              <MapPin className="h-3.5 w-3.5 text-pln-cyan" />
+              <select
+                value={selectedRegion}
+                onChange={(e) => setSelectedRegion(e.target.value)}
+                className="bg-transparent text-[11px] font-black text-pln-darkBlue uppercase outline-none focus:ring-0 min-w-[140px]"
+              >
+                <option value="ALL">KESELURUHAN (GLOBAL)</option>
+                <option value="Banjarmasin">UL Banjarmasin</option>
+                <option value="Barabai">UL Barabai</option>
+                <option value="Palangkaraya">UL Palangkaraya</option>
+                <option value="Pangkalan Bun">UL Pangkalan Bun</option>
+                <option value="Kapuas">UL Kapuas</option>
+              </select>
+            </div>
+          )}
+
           <div className="flex items-center p-0.5 rounded-md bg-white border border-border text-[11px] shadow-sm">
             {['1d', '7d', '30d'].map((r) => (
               <button key={r} onClick={() => setRange(r)} className={cn("px-3 py-1 rounded-[4px] transition-all", range === r ? "bg-pln-iceBlue text-pln-darkBlue font-bold border border-pln-cyan/10" : "text-muted-foreground hover:text-foreground")}>
