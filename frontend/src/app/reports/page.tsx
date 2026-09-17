@@ -42,7 +42,12 @@ export default function ReportsPage() {
 
   const { data: vehicles, isLoading: isLoadingVehicles } = useQuery({
     queryKey: ['vehicles-report', isPusat ? selectedRegion : userProfile?.region],
-    queryFn: () => getVehicles(undefined, isPusat ? (selectedRegion === 'ALL' ? undefined : selectedRegion) : userProfile?.region),
+    queryFn: () => {
+      const regionFilter = isPusat
+        ? (selectedRegion === 'ALL' ? undefined : selectedRegion)
+        : userProfile?.region;
+      return getVehicles(undefined, regionFilter);
+    },
     enabled: mounted && (isPusat || !!userProfile?.region),
   });
 

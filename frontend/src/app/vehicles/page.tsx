@@ -19,8 +19,12 @@ export default function VehiclesPage() {
   }, []);
 
   const { data: serverVehicles, isLoading } = useQuery({
-    queryKey: ['vehicles', userProfile?.region],
-    queryFn: () => getVehicles(undefined, userProfile?.region),
+    queryKey: ['vehicles', userProfile?.region, userProfile?.role],
+    queryFn: () => {
+      // Jika Admin Pusat, jangan kirim filter wilayah (biarkan undefined)
+      const regionFilter = userProfile?.role === 'ADMIN_PUSAT' ? undefined : userProfile?.region;
+      return getVehicles(undefined, regionFilter);
+    },
     enabled: mounted && !!userProfile,
   });
 

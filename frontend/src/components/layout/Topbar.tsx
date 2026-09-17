@@ -57,7 +57,11 @@ export default function Topbar() {
 
   const adminName = userProfile?.name || realUser?.full_name || 'Admin';
   const adminRole = userProfile?.role || realUser?.role || 'ADMIN';
-  const adminRegion = userProfile?.region || realUser?.region || 'Unit UPKAL2 Regional';
+
+  // Jika Admin Pusat, tampilkan 'Pusat UPKAL2', jika tidak tampilkan regionnya
+  const adminRegion = adminRole === 'ADMIN_PUSAT'
+    ? 'Kantor Pusat UPKAL2'
+    : (userProfile?.region || realUser?.region || 'Unit UPKAL2 Regional');
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
