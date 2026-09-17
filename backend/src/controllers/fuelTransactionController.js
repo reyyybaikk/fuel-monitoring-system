@@ -106,6 +106,21 @@ class FuelTransactionController {
     }
   };
 
+  // 10. Update transaction data (Correction)
+  update = async (req, res, next) => {
+    try {
+      const { id } = req.params;
+      const updated = await fuelTransactionService.updateTransactionData(id, req.body);
+      res.status(200).json({
+        success: true,
+        message: 'Data transaksi berhasil dikoreksi',
+        data: updated,
+      });
+    } catch (error) {
+      next(error);
+    }
+  };
+
   // 6. Get Analytics (Ported from legacy)
   getAnalytics = async (req, res, next) => {
     try {

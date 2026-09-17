@@ -296,6 +296,25 @@ class FuelTransactionRepository {
     return result.rows[0];
   }
 
+  async update(id, data) {
+    const { fuel_amount, odometer, total_cost, fuel_type, notes, status } = data;
+    const query = `
+      UPDATE fuel_transactions
+      SET fuel_amount = COALESCE($1, fuel_amount),
+          odometer = COALESCE($2, odometer),
+          total_cost = COALESCE($3, total_cost),
+          fuel_type = COALESCE($4, fuel_type),
+          notes = COALESCE($5, notes),
+          status = COALESCE($6, status),
+          updated_at = CURRENT_TIMESTAMP
+      WHERE id = $7
+      RETURNING *;
+    `;
+    const values = [fuel_amount, odometer, total_cost, fuel_type, notes, status, id];
+    const result = await db.query(query, values);
+    return result.rows[0];
+  }
+
   async getSummary(role, region) {
     let whereClause = 'WHERE 1=1';
     let vehicleWhereClause = 'WHERE 1=1';

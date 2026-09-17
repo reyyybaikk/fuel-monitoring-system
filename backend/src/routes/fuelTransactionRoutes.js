@@ -33,4 +33,7 @@ router.get('/:id/photo/:type', fuelTransactionController.getPhoto);
 // 6. ADMIN/MANAGER: Verifikasi Status
 router.patch('/:id/status', authorize('ADMIN_PUSAT', 'ADMIN', 'MANAGER'), fuelTransactionController.updateStatus);
 
+// 7. ADMIN/MANAGER: Koreksi Data
+router.put('/:id', authorize('ADMIN_PUSAT', 'ADMIN', 'MANAGER'), fuelTransactionController.update);
+
 module.exports = router;
