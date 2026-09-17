@@ -69,7 +69,7 @@ export default function Sidebar() {
                     <div className="flex items-center gap-4">
                       <IconComponent className={cn(
                         "h-5 w-5 shrink-0 transition-all",
-                        isActive ? "text-[#ffe600] scale-110" : "text-slate-400 group-hover:text-[#0b536f]"
+                        isActive ? "text-white scale-110" : "text-slate-400 group-hover:text-[#0b536f]"
                       )} />
                       <span className={cn(
                         "text-[13px] font-bold tracking-tight",
@@ -83,10 +83,6 @@ export default function Sidebar() {
                       <span className="ml-auto inline-flex items-center px-1.5 py-0.5 rounded-full font-mono text-[8px] font-black bg-anomaly-red text-white shadow-sm">
                         {item.badge}
                       </span>
-                    )}
-
-                    {isActive && (
-                      <div className="ml-auto w-1.5 h-1.5 rounded-full bg-[#ffe600] shadow-[0_0_8px_#ffe600]" />
                     )}
                   </Link>
                 );
