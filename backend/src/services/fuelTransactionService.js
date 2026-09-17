@@ -219,11 +219,20 @@ class FuelTransactionService {
 
     return new Promise(async (resolve, reject) => {
       try {
-        // A4 Portrait Margin 15mm approx 42 points
-        const doc = new PDFDocument({ margin: 42, size: 'A4', layout: 'portrait' });
+        // PERBAIKAN: Set Portrait dan Ukuran A4 secara absolut (595.28 x 841.89 points)
+        const doc = new PDFDocument({
+            size: 'A4',
+            layout: 'portrait',
+            margin: 42,
+            bufferPages: true
+        });
+
         let buffers = [];
         doc.on('data', buffers.push.bind(buffers));
         doc.on('end', () => resolve(Buffer.concat(buffers)));
+
+        // Pastikan halaman pertama adalah Portrait
+        doc.switchToPage(0);
 
         // --- 1. HEADER ---
         doc.fontSize(9).font('Helvetica-Bold');
