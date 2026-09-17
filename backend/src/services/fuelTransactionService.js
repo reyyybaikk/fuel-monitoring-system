@@ -213,15 +213,19 @@ class FuelTransactionService {
     const transactions = await fuelTransactionRepository.findAllForExport(filters);
     const vehicle = filters.vehicle_id ? await vehicleRepository.findById(filters.vehicle_id) : null;
 
+    // Hitung Sub Total
+    const totalLiter = transactions.reduce((sum, tx) => sum + Number(tx.fuel_amount || 0), 0);
+    const totalRupiah = transactions.reduce((sum, tx) => sum + Number(tx.total_cost || 0), 0);
+
     return new Promise(async (resolve, reject) => {
       try {
-        // A4 Margin 15mm approx 42.5 points
-        const doc = new PDFDocument({ margin: 42, size: 'A4' });
+        // A4 Portrait Margin 15mm approx 42 points
+        const doc = new PDFDocument({ margin: 42, size: 'A4', layout: 'portrait' });
         let buffers = [];
         doc.on('data', buffers.push.bind(buffers));
         doc.on('end', () => resolve(Buffer.concat(buffers)));
 
-        // --- 1. HEADER (Identik dengan Web Preview) ---
+        // --- 1. HEADER ---
         doc.fontSize(9).font('Helvetica-Bold');
         const displayRegion = filters.ul_nd ? `UL ${filters.ul_nd.replace('Unit Layanan ', '')}` : 'UPKAL2 REGIONAL';
 
@@ -234,41 +238,76 @@ class FuelTransactionService {
         doc.moveTo(42, doc.y).lineTo(553, doc.y).strokeColor('#cbd5e1').stroke();
         doc.moveDown(1.5);
 
-        // --- 2. TABEL LOG TRANSAKSI ---
+        // --- 2. TABEL LOG TRANSAKSI DENGAN GARIS ---
         doc.fontSize(9).font('Helvetica-Bold').fillColor('#1e293b').text('LOG TRANSAKSI BAHAN BAKAR', { characterSpacing: 1 });
         doc.moveDown(0.5);
 
         const tableTop = doc.y;
-        doc.fontSize(7).font('Helvetica-Bold').fillColor('black');
+        const colWidths = { no: 25, tgl: 50, plat: 75, standA: 70, standB: 70, bbm: 95, cost: 126 };
+        const colX = {
+            no: 42,
+            tgl: 42 + 25,
+            plat: 42 + 25 + 50,
+            standA: 42 + 25 + 50 + 75,
+            standB: 42 + 25 + 50 + 75 + 70,
+            bbm: 42 + 25 + 50 + 75 + 70 + 70,
+            cost: 42 + 25 + 50 + 75 + 70 + 70 + 95
+        };
 
-        // Headers
-        doc.text('No', 42, tableTop, { width: 20 });
-        doc.text('Tanggal', 65, tableTop, { width: 50 });
-        doc.text('No. Pol / Pelat', 115, tableTop, { width: 80 });
-        doc.text('Stand Awal/Odo', 195, tableTop, { width: 70 });
-        doc.text('Stand Akhir/Odo', 265, tableTop, { width: 70 });
-        doc.text('Liter / Jenis BBM', 335, tableTop, { width: 90 });
-        doc.text('Total Rupiah Pembelian', 425, tableTop, { width: 128 });
+        const drawRowBorders = (y, height) => {
+            doc.rect(42, y, 511, height).strokeColor('#94a3b8').stroke();
+            // Vertical lines
+            [colX.tgl, colX.plat, colX.standA, colX.standB, colX.bbm, colX.cost].forEach(x => {
+                doc.moveTo(x, y).lineTo(x, y + height).stroke();
+            });
+        };
 
-        doc.moveTo(42, tableTop + 12).lineTo(553, tableTop + 12).strokeColor('#94a3b8').stroke();
+        // Header Background & Text
+        doc.rect(42, tableTop, 511, 15).fill('#f1f5f9');
+        doc.fillColor('black').fontSize(7).font('Helvetica-Bold');
+        doc.text('No', colX.no, tableTop + 4, { width: colWidths.no, align: 'center' });
+        doc.text('Tanggal', colX.tgl, tableTop + 4, { width: colWidths.tgl, align: 'center' });
+        doc.text('No. Pol / Pelat', colX.plat, tableTop + 4, { width: colWidths.plat, align: 'center' });
+        doc.text('Stand Awal/Odo', colX.standA, tableTop + 4, { width: colWidths.standA, align: 'center' });
+        doc.text('Stand Akhir/Odo', colX.standB, tableTop + 4, { width: colWidths.standB, align: 'center' });
+        doc.text('Liter / Jenis BBM', colX.bbm, tableTop + 4, { width: colWidths.bbm, align: 'center' });
+        doc.text('Total Rupiah Pembelian', colX.cost, tableTop + 4, { width: colWidths.cost, align: 'center' });
+        drawRowBorders(tableTop, 15);
 
-        let y = tableTop + 20;
+        let y = tableTop + 15;
         if (transactions.length === 0) {
-          doc.font('Helvetica-Oblique').text('Tidak ditemukan data transaksi.', 42, y);
+          doc.font('Helvetica-Oblique').text('Tidak ditemukan data transaksi.', 42, y + 5);
+          drawRowBorders(y, 15);
+          y += 15;
         } else {
           transactions.forEach((tx, i) => {
-            if (y > 750) { doc.addPage(); y = 50; }
-            doc.font('Helvetica').fontSize(7);
-            doc.text(i + 1, 42, y, { width: 20 });
-            doc.text(new Date(tx.created_at).toLocaleDateString('id-ID'), 65, y);
-            doc.text(tx.license_plate, 115, y);
-            doc.text(`${Number(tx.odometer).toLocaleString('id-ID')} Km`, 195, y);
-            doc.text(tx.odometer_next ? `${Number(tx.odometer_next).toLocaleString('id-ID')} Km` : '-', 265, y);
-            doc.text(`${tx.fuel_amount} L / ${tx.fuel_type || 'BBM'}`, 335, y);
-            doc.text(`Rp ${Number(tx.total_cost).toLocaleString('id-ID')}`, 425, y);
+            if (y > 730) {
+                doc.addPage();
+                y = 50;
+                // Redraw headers on new page? (Optional, skipping for now)
+            }
+            doc.font('Helvetica').fontSize(7).fillColor('black');
+            doc.text(i + 1, colX.no, y + 4, { width: colWidths.no, align: 'center' });
+            doc.text(new Date(tx.created_at).toLocaleDateString('id-ID'), colX.tgl, y + 4, { width: colWidths.tgl, align: 'center' });
+            doc.text(tx.license_plate, colX.plat + 5, y + 4, { width: colWidths.plat - 5 });
+            doc.text(`${Number(tx.odometer).toLocaleString('id-ID')} Km`, colX.standA, y + 4, { width: colWidths.standA, align: 'center' });
+            doc.text(tx.odometer_next ? `${Number(tx.odometer_next).toLocaleString('id-ID')} Km` : '-', colX.standB, y + 4, { width: colWidths.standB, align: 'center' });
+            doc.text(`${tx.fuel_amount} L / ${tx.fuel_type || 'BBM'}`, colX.bbm + 5, y + 4, { width: colWidths.bbm - 5 });
+            doc.text(`Rp ${Number(tx.total_cost).toLocaleString('id-ID')}`, colX.cost, y + 4, { width: colWidths.cost - 5, align: 'right' });
+
+            drawRowBorders(y, 15);
             y += 15;
           });
         }
+
+        // --- SUB TOTAL ROW ---
+        doc.rect(42, y, 511, 15).fill('#f8fafc');
+        doc.fillColor('black').font('Helvetica-Bold').fontSize(7);
+        doc.text('SUB TOTAL (AKUMULASI)', colX.no, y + 4, { width: colX.bbm - colX.no, align: 'right' });
+        doc.text(`${totalLiter.toFixed(2)} L`, colX.bbm, y + 4, { width: colWidths.bbm, align: 'center' });
+        doc.text(`Rp ${totalRupiah.toLocaleString('id-ID')}`, colX.cost, y + 4, { width: colWidths.cost - 5, align: 'right' });
+        drawRowBorders(y, 15);
+        y += 30;
 
         // --- 3. LAMPIRAN BUKTI FISIK (Identik Web Layout) ---
         if (transactions.length > 0) {
