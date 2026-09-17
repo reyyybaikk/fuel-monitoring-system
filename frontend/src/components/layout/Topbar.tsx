@@ -83,10 +83,10 @@ export default function Topbar() {
       {/* CENTER SECTION: LETS GO STYLE */}
       <div className="hidden lg:flex flex-col items-center text-center flex-1 mx-4">
         <h2 className="text-base font-black text-[#006492] uppercase tracking-[0.2em]">
-          LETS GO
+          Fuel Monitoring
         </h2>
         <p className="text-[10px] font-bold text-slate-500 uppercase tracking-tight opacity-80">
-          {adminRegion} • Logistik Efisien Terintegrasi & Solutif
+          {adminRegion} • Monitoring BBM Efisien Terintegrasi
         </p>
       </div>
 
