@@ -167,6 +167,14 @@ class FuelTransactionService {
       status: data.status || 'APPROVED'
     });
 
+    // PUSH ke antrean ML-Engine untuk verifikasi ulang data yang sudah dikoreksi
+    try {
+      await redisClient.lPush('fuel_queue', JSON.stringify({ transactionId: id }));
+      console.log(`[Queue] Re-verifikasi Job ID ${id} (Koreksi Admin) masuk ke 'fuel_queue'.`);
+    } catch (error) {
+      console.error(`[Queue Error] Gagal memasukkan koreksi transaksi ${id} ke antrean:`, error.message);
+    }
+
     return updated;
   }
 
