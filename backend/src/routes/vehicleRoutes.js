@@ -56,6 +56,7 @@ router.get('/verify/:licensePlate', async (req, res) => {
                 vehicleType: vehicle.vehicle_type,
                 ulNd: vehicle.ul_nd,
                 ulPln: vehicle.ul_pln,
+                fuelType: vehicle.fuel_type, // Menambahkan fuel_type agar mobile app bisa memfilter jenis BBM
                 adminWhatsapp: vehicle.admin_whatsapp // Data dinamis dari database
             }
         });
