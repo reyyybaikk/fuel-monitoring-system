@@ -5,7 +5,8 @@ const generateToken = (user) => {
   const payload = {
     id: user.id,
     email: user.email,
-    role: user.role
+    role: user.role,
+    region: user.region // WAJIB: Sertakan wilayah agar filter Dashboard/Transaksi berfungsi
   };
 
   const secret = process.env.JWT_SECRET;
