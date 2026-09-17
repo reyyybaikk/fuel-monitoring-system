@@ -24,7 +24,7 @@ import toast from 'react-hot-toast';
 import { cn } from '@/lib/utils';
 
 export default function ReportsPage() {
-  const { userProfile } = useAuthStore();
+  const { userProfile, isAuthenticated } = useAuthStore();
   const [selectedVehicleId, setSelectedVehicleId] = useState<string>('ALL');
   const [selectedRegion, setSelectedRegion] = useState<string>(userProfile?.region || 'ALL');
   const [vehicleSearch, setVehicleSearch] = useState('');
@@ -48,13 +48,12 @@ export default function ReportsPage() {
         : userProfile?.region;
       return getVehicles(undefined, regionFilter);
     },
-    enabled: mounted && (isPusat || !!userProfile?.region),
+    enabled: mounted && isAuthenticated && (isPusat || !!userProfile?.region),
   });
 
   const { data: reportTransactions, isLoading: isLoadingPreview } = useQuery({
     queryKey: ['report-preview', selectedVehicleId, selectedRegion, startDate, endDate],
     queryFn: async () => {
-      // Backend findAllForExport sekarang mengembalikan odometer_next via LEAD()
       const response = await api.get('/api/fuel-transactions/export-pdf-preview', {
         params: {
           vehicle_id: selectedVehicleId === 'ALL' ? undefined : selectedVehicleId,
@@ -65,7 +64,7 @@ export default function ReportsPage() {
       });
       return response.data.data;
     },
-    enabled: mounted,
+    enabled: mounted && isAuthenticated,
   });
 
   const filteredVehicles = useMemo(() => {

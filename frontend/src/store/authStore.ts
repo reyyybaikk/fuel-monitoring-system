@@ -4,7 +4,7 @@ interface UserProfile {
   id: number;
   name: string;
   email: string;
-  role: 'ADMIN' | 'DRIVER';
+  role: 'ADMIN_PUSAT' | 'ADMIN' | 'MANAGER' | 'DRIVER';
   region?: string;
 }
 
