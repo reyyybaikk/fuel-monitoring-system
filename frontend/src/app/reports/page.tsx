@@ -130,7 +130,8 @@ export default function ReportsPage() {
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
-      link.setAttribute('download', `Laporan_Audit_BBM_${startDate}.pdf`);
+      const plateLabel = selectedVehicleId !== 'ALL' && activeVehicle ? `_${activeVehicle.license_plate}` : '_Kolektif';
+      link.setAttribute('download', `Laporan_Audit_BBM${plateLabel}_${startDate}.pdf`);
       document.body.appendChild(link);
       link.click();
       toast.success('Laporan PDF Berhasil Diunduh.', { id: loadingToast });
