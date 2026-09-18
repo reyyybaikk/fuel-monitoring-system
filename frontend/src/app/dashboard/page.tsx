@@ -58,18 +58,20 @@ const KalimantanMap = ({ markers }: { markers: any[] }) => {
     return L.divIcon({
       className: 'custom-div-icon',
       html: `
-        <div style="background-color: white; width: 34px; height: 34px; border-radius: 10px; display: flex; align-items: center; justify-content: center; border: 2px solid #00a2e8; box-shadow: 0 4px 15px rgba(0,162,232,0.3); transition: all 0.3s ease;">
-          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#0b536f" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M14 18V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v11a1 1 0 0 0 1 1h2"/>
-            <path d="M15 18H9"/>
-            <path d="M19 18h2a1 1 0 0 0 1-1v-5l-4-4h-3"/>
-            <circle cx="7" cy="18" r="2"/>
-            <circle cx="17" cy="18" r="2"/>
-          </svg>
+        <div style="background-color: #0b536f; width: 36px; height: 36px; border-radius: 10px; display: flex; align-items: center; justify-content: center; border: 2px solid white; box-shadow: 0 4px 15px rgba(11,83,111,0.5); transform: rotate(-45deg); border-bottom-right-radius: 2px;">
+          <div style="transform: rotate(45deg); display: flex; align-items: center; justify-content: center;">
+            <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M14 18V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v11a1 1 0 0 0 1 1h2"/>
+              <path d="M15 18H9"/>
+              <path d="M19 18h2a1 1 0 0 0 1-1v-5l-4-4h-3"/>
+              <circle cx="7" cy="18" r="2"/>
+              <circle cx="17" cy="18" r="2"/>
+            </svg>
+          </div>
         </div>
       `,
-      iconSize: [34, 34],
-      iconAnchor: [17, 17]
+      iconSize: [36, 36],
+      iconAnchor: [18, 18]
     });
   };
 

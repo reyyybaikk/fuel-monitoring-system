@@ -2,7 +2,7 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { useAuthStore } from '@/store/authStore';
 import { useUIStore } from '@/store/uiStore';
 import {
@@ -13,11 +13,24 @@ import {
   LogOut,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import toast from 'react-hot-toast';
 
 export default function Sidebar() {
   const pathname = usePathname();
+  const router = useRouter();
   const logoutUser = useAuthStore((state) => state.logout);
   const { isSidebarCollapsed, toggleSidebar } = useUIStore();
+
+  const handleLogout = () => {
+    const logoutToast = toast.loading('Mengakhiri sesi...');
+    try {
+      logoutUser();
+      toast.success('Berhasil keluar portal.', { id: logoutToast });
+      router.push('/login');
+    } catch (err) {
+      toast.error('Gagal keluar sesi.', { id: logoutToast });
+    }
+  };
 
   const menuItems = [
     { label: 'Dasbor', href: '/dashboard', icon: LayoutDashboard },
@@ -94,7 +107,7 @@ export default function Sidebar() {
         {/* Footer - Integrated with Design System */}
         <div className="p-4 bg-slate-50 border-t border-slate-100">
           <button
-            onClick={() => logoutUser()}
+            onClick={handleLogout}
             className="flex items-center justify-center gap-3 py-3 w-full rounded-[12px] text-[11px] font-black transition-all duration-200 uppercase tracking-widest text-slate-400 hover:bg-red-50 hover:text-red-600 border border-slate-200 hover:border-red-100 group"
           >
             <LogOut className="h-4 w-4 transition-transform group-hover:-translate-x-1" />
