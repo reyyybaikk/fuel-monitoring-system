@@ -6,18 +6,29 @@ export interface DashboardSummary {
   active_vehicles: number;
   total_vehicles: number;
   anomaly_count: number;
-  liter_change_percentage: number;
-  cost_change_percentage: number;
-  recent_anomalies: {
-    id: string;
-    plate: string;
-    score: number;
-    notes: string;
+  avg_efficiency: number;
+  tickets: {
+    pending_tickets: number;
+    investigation_tickets: number;
+    completed_tickets: number;
+  };
+  allocation: {
+    label: string;
+    value: number;
   }[];
   chart_data: {
-    day: string;
+    label: string;
     value: number;
-    is_anomaly: boolean;
+    anomaly_value: number;
+  }[];
+  recent_activities: any[];
+  map_markers: {
+    label: string;
+    region: string;
+    vehicle_count: number;
+    anomaly_count: number;
+    lat: number;
+    lng: number;
   }[];
 }
 

@@ -333,10 +333,10 @@ class FuelTransactionRepository {
 
     const statsQuery = `
       SELECT
-        SUM(ft.fuel_amount) as total_liters,
-        SUM(ft.total_cost) as total_cost,
+        SUM(ft.fuel_amount)::float as total_liters,
+        SUM(ft.total_cost)::float as total_cost,
         COUNT(CASE WHEN ft.ml_is_anomaly = TRUE THEN 1 END) as anomaly_count,
-        AVG(CASE WHEN ft.real_fuel_consumption > 0 THEN ft.real_fuel_consumption END) as avg_efficiency
+        AVG(CASE WHEN ft.real_fuel_consumption > 0 THEN ft.real_fuel_consumption END)::float as avg_efficiency
       FROM fuel_transactions ft
       JOIN vehicles v ON ft.vehicle_id = v.id
       ${whereClause}
@@ -360,7 +360,7 @@ class FuelTransactionRepository {
     const allocationQuery = `
       SELECT
         COALESCE(v.usage_purpose, 'Lainnya') as label,
-        SUM(ft.fuel_amount) as value
+        SUM(ft.fuel_amount)::float as value
       FROM fuel_transactions ft
       JOIN vehicles v ON ft.vehicle_id = v.id
       ${whereClause}
@@ -418,8 +418,8 @@ class FuelTransactionRepository {
     let query = `
       SELECT
         TO_CHAR(ft.created_at, 'Mon') as label,
-        SUM(ft.fuel_amount) as value,
-        SUM(CASE WHEN ft.ml_is_anomaly = TRUE THEN ft.fuel_amount ELSE 0 END) as anomaly_value
+        SUM(ft.fuel_amount)::float as value,
+        SUM(CASE WHEN ft.ml_is_anomaly = TRUE THEN ft.fuel_amount ELSE 0 END)::float as anomaly_value
       FROM fuel_transactions ft
       JOIN vehicles v ON ft.vehicle_id = v.id
       ${whereClause}

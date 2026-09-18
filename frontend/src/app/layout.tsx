@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React from 'react';
 import { usePathname } from 'next/navigation';
 import Sidebar from '@/components/layout/Sidebar';
 import Topbar from '@/components/layout/Topbar';
@@ -33,7 +33,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   // Global Background Component
   const GlobalBackground = () => (
     <div className="fixed inset-0 z-0 pointer-events-none">
-      {/* 1. IMAGE LAYER */}
       <img
         src="/login-bg-industrial.jpg"
         alt=""
@@ -43,9 +42,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           e.currentTarget.style.display = 'none';
         }}
       />
-      {/* 2. OVERLAY LAYER */}
       <div className="absolute inset-0 bg-gradient-to-tr from-[#f8f9ff] via-[#f8f9ff]/40 to-transparent" />
-      {/* 3. GRID LAYER */}
       <svg width="100%" height="100%" xmlns="http://www.w3.org/2000/svg" className="absolute inset-0 opacity-[0.05]">
         <defs>
           <pattern id="global-industrial-grid" width="40" height="40" patternUnits="userSpaceOnUse">
@@ -73,31 +70,32 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     );
   }
 
-  // Layout untuk Dashboard Utama
+  // Layout untuk Dashboard Utama (Revised for better stacking)
   return (
     <html lang="id" className="h-full" suppressHydrationWarning>
       <body className="h-full bg-[#f8f9ff] text-[#0b1c30] antialiased relative" suppressHydrationWarning>
         <QueryClientProvider client={queryClient}>
           <GlobalBackground />
 
-          {/* Sidebar & Layout Utama hanya dirender penuh setelah mounted */}
-          {mounted ? (
-            <div className="relative z-10 flex flex-col min-h-screen">
-              <Toaster position="top-right" reverseOrder={false} />
-              <Topbar />
-              <div className="flex flex-1">
-                <Sidebar />
-                <main className={cn(
-                  "flex-1 pt-20 px-6 py-6 transition-all duration-300 ease-in-out",
-                  isSidebarCollapsed ? "pl-20" : "pl-64"
-                )}>
+          <Toaster position="top-right" reverseOrder={false} />
+
+          <Topbar />
+
+          <div className="flex min-h-screen relative pt-20">
+            <Sidebar />
+            <main className={cn(
+              "flex-1 px-6 py-6 transition-all duration-300 ease-in-out relative z-10",
+              isSidebarCollapsed ? "pl-6" : "pl-[272px]" // pl-64 (sidebar) + px-6 (main padding) = 272px
+            )}>
+              {mounted ? (
+                <div className="w-full h-full animate-in fade-in duration-500">
                   {children}
-                </main>
-              </div>
-            </div>
-          ) : (
-            <div className="min-h-screen" suppressHydrationWarning />
-          )}
+                </div>
+              ) : (
+                <div className="w-full h-full bg-transparent" />
+              )}
+            </main>
+          </div>
         </QueryClientProvider>
       </body>
     </html>

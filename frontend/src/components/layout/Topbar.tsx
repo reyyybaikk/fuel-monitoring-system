@@ -64,28 +64,30 @@ export default function Topbar() {
 
         <div className="flex items-center gap-3">
           {/* Logo PLN */}
-          <img src="/logo-pln.png" alt="PLN" className="h-10 w-auto object-contain" />
+          <img src="/logo-pln.png" alt="PLN" className="h-12 w-auto object-contain" />
           <div className="flex flex-col leading-none">
-            <span className="font-black text-[14px] text-[#0b536f] tracking-tighter">PLN</span>
-            <span className="text-[11px] font-bold text-[#00a2e8]">Nusa Daya</span>
           </div>
 
           <div className="h-8 w-px bg-slate-200 mx-1"></div>
 
-          {/* Logo Danantara */}
-          <div className="relative flex items-center gap-2">
+          {/* Logo Danantara dengan Fallback yang Lebih Terjamin */}
+          <div className="relative flex items-center min-w-[120px]">
             <img
               src="/logo-danantara.png"
               alt="Danantara"
-              className="h-8 w-auto object-contain"
+              className="h-6 w-auto object-contain"
+              onLoad={(e) => {
+                // Sembunyikan fallback jika gambar berhasil dimuat
+                e.currentTarget.nextElementSibling?.classList.add('hidden');
+              }}
               onError={(e) => {
                 e.currentTarget.style.display = 'none';
                 e.currentTarget.nextElementSibling?.classList.remove('hidden');
               }}
             />
-            <div className="hidden flex items-center gap-2 animate-in fade-in">
-              <div className="w-7 h-7 rounded bg-[#0b1c30] flex items-center justify-center text-white shadow-sm border border-white/10">
-                 <Zap className="h-3.5 w-3.5 text-[#ffe600]" />
+            <div className="flex items-center gap-2 transition-all">
+              <div className="w-8 h-8 rounded bg-[#0b1c30] flex items-center justify-center text-white shadow-md border border-white/10">
+                 <Zap className="h-4.5 w-4.5 text-[#ffe600]" />
               </div>
               <div className="flex flex-col leading-none ml-1">
                 <span className="font-bold text-[10px] text-[#0b1c30] uppercase tracking-tighter">Danantara</span>
@@ -99,10 +101,10 @@ export default function Topbar() {
       {/* CENTER SECTION: LETS GO STYLE */}
       <div className="hidden lg:flex flex-col items-center text-center flex-1 mx-4">
         <h2 className="text-base font-black text-[#006492] uppercase tracking-[0.2em]">
-          LETS GO
+          FUEL MONITORING SYSTEM
         </h2>
         <p className="text-[10px] font-bold text-slate-500 uppercase tracking-tight opacity-80">
-          {adminRegion} • Logistik Efisien Terintegrasi & Solutif
+          {adminRegion} • Monitoring BBM Efisien Terintegrasi
         </p>
       </div>
 
