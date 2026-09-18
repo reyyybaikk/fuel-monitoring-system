@@ -268,7 +268,6 @@ export default function LoginPage() {
                     </div>
                   </div>
 
-                  {/* Options */}
                   <div className="flex items-center justify-between pt-2">
                     <div className="flex items-center space-x-2">
                       <Checkbox
@@ -278,12 +277,12 @@ export default function LoginPage() {
                         className="rounded border-slate-300 data-[state=checked]:bg-[#00A2E8] data-[state=checked]:border-[#00A2E8]"
                       />
                       <label htmlFor="remember" className="text-xs font-bold text-slate-600 cursor-pointer select-none">
-                        Ingatkan Masuk
+                        Ingat perangkat ini
                       </label>
                     </div>
                     <div className="flex items-center gap-1.5 text-emerald-600">
                       <ShieldCheck className="h-3.5 w-3.5" />
-                      <span className="text-[10px] font-black uppercase tracking-tight"></span>
+                      <span className="text-[10px] font-black uppercase tracking-tight">Otentikasi 2-Akses</span>
                     </div>
                   </div>
 

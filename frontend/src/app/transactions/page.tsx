@@ -110,7 +110,7 @@ function TransactionsContent() {
           )}
 
           <button className="h-9 text-xs px-4 font-black bg-pln-darkBlue text-white rounded-[4px] shadow-sm active:scale-95 transition-all uppercase tracking-wider">
-            Ekspor CSV
+            Ekspor Data
           </button>
         </div>
       </div>
@@ -148,7 +148,7 @@ function TransactionsContent() {
                       {tx.ml_is_anomaly ? (
                         <Badge className="bg-anomaly-red text-white text-[8px] font-bold rounded-[3px] px-1.5 h-4 border-none shadow-sm">RISIKO: {tx.ml_anomaly_score}</Badge>
                       ) : (
-                        <Badge variant="outline" className="text-emerald-600 border-emerald-200 bg-emerald-50 text-[8px] font-bold rounded-[3px] px-1.5 h-4">NORMAL</Badge>
+                        <Badge variant="outline" className="text-emerald-600 border-emerald-200 bg-emerald-50 text-[8px] font-bold rounded-[3px] px-1.5 h-4">AMAN</Badge>
                       )}
                     </div>
 
@@ -210,7 +210,7 @@ function TransactionsContent() {
                      activeTx.status === 'PENDING' ? "bg-amber-50 text-amber-700 border-amber-200" :
                      activeTx.status === 'APPROVED' ? "bg-emerald-50 text-emerald-700 border-emerald-200" : "bg-red-50 text-red-700 border-red-200"
                    )}>
-                    {activeTx.status}
+                    {activeTx.status === 'PENDING' ? 'MENUNGGU' : activeTx.status === 'APPROVED' ? 'DISETUJUI' : 'DITOLAK'}
                   </Badge>
                 </div>
               </div>
@@ -287,7 +287,7 @@ function TransactionsContent() {
               )}>
                 <h4 className="text-[11px] font-bold flex items-center gap-2 mb-1.5 text-foreground uppercase tracking-tight">
                   <AlertTriangle className={cn("h-4 w-4", activeTx.ml_is_anomaly ? "text-anomaly-red" : "text-emerald-600")} />
-                  Kesimpulan Machine Learning
+                  Analisis Kecerdasan Buatan (AI)
                 </h4>
                 <p className={cn(
                   "text-xs leading-relaxed font-medium",

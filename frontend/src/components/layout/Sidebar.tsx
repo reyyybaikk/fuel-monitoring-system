@@ -111,7 +111,7 @@ export default function Sidebar() {
             className="flex items-center justify-center gap-3 py-3 w-full rounded-[12px] text-[11px] font-black transition-all duration-200 uppercase tracking-widest text-slate-400 hover:bg-red-50 hover:text-red-600 border border-slate-200 hover:border-red-100 group"
           >
             <LogOut className="h-4 w-4 transition-transform group-hover:-translate-x-1" />
-            <span>Sign Out Sesi</span>
+            <span>Keluar Portal</span>
           </button>
         </div>
       </aside>

@@ -176,7 +176,7 @@ export default function VehiclesPage() {
 
                   {vh.project_name && (
                     <div className="flex items-center gap-1.5 text-[9px] font-bold text-pln-darkBlue/70 bg-pln-iceBlue/30 p-1.5 rounded border border-pln-cyan/5">
-                      <span className="uppercase tracking-tighter opacity-60 shrink-0">Project:</span>
+                      <span className="uppercase tracking-tighter opacity-60 shrink-0">Proyek:</span>
                       <span className="truncate" title={vh.project_name}>{vh.project_name}</span>
                     </div>
                   )}

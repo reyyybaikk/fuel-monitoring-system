@@ -187,8 +187,8 @@ export default function DashboardPage() {
           <Activity className="absolute inset-0 m-auto h-6 w-6 text-pln-darkBlue animate-pulse" />
         </div>
         <div className="space-y-1.5">
-          <p className="text-sm font-black text-pln-darkBlue uppercase tracking-[0.2em]">Authenticating Telemetry</p>
-          <p className="text-[10px] text-slate-400 font-bold uppercase">Streaming live data from Kalimantan unit nodes...</p>
+          <p className="text-sm font-black text-pln-darkBlue uppercase tracking-[0.2em]">Otentikasi Telemetri</p>
+          <p className="text-[10px] text-slate-400 font-bold uppercase">Menarik data langsung dari titik unit Kalimantan...</p>
         </div>
       </div>
     );
@@ -206,12 +206,12 @@ export default function DashboardPage() {
                   <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
                   <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
                 </span>
-                <span className="text-[10px] font-black text-slate-600 uppercase tracking-widest">System Online</span>
+                <span className="text-[10px] font-black text-slate-600 uppercase tracking-widest">Sistem Online</span>
              </div>
              <span className="text-slate-300 text-xs font-bold">/</span>
-             <span className="text-[10px] font-black text-pln-cyan uppercase tracking-widest">{isPusat ? 'Global Regional' : selectedRegion}</span>
+             <span className="text-[10px] font-black text-pln-cyan uppercase tracking-widest">{isPusat ? 'Regional Global' : selectedRegion}</span>
           </div>
-          <h1 className="text-3xl font-black text-slate-900 tracking-tighter uppercase">Operational Console</h1>
+          <h1 className="text-3xl font-black text-slate-900 tracking-tighter uppercase">Konsol Operasional</h1>
         </div>
 
         <div className="flex items-center gap-4">
@@ -243,7 +243,7 @@ export default function DashboardPage() {
                   range === r ? "bg-pln-darkBlue text-white shadow-md" : "text-slate-400 hover:text-slate-600"
                 )}
               >
-                {r === '1d' ? 'Today' : r === '7d' ? '7 Days' : '30 Days'}
+                {r === '1d' ? 'Hari Ini' : r === '7d' ? '7 Hari' : '30 Hari'}
               </button>
             ))}
           </div>
@@ -264,7 +264,7 @@ export default function DashboardPage() {
           {
             label: 'Total Konsumsi BBM / Bulan',
             value: `${(data?.total_liters || 0).toLocaleString('id-ID')} L`,
-            sub: 'Budget: 68.0k L',
+            sub: 'Pagu Anggaran: 68.0k L',
             trend: '+4.2%',
             icon: Fuel,
             color: 'bg-gradient-to-br from-[#00a2e8] to-[#008ac6]'
@@ -272,15 +272,15 @@ export default function DashboardPage() {
           {
             label: 'Armada Aktif Terhubung',
             value: `${data?.active_vehicles || 0} Unit`,
-            sub: 'Monitoring Live 24/7',
-            trend: 'Stable',
+            sub: 'Pemantauan Langsung 24/7',
+            trend: 'Stabil',
             icon: Truck,
             color: 'bg-gradient-to-br from-[#0b536f] to-[#08425a]'
           },
           {
             label: 'Rata-Rata Efisiensi',
             value: `${(data?.avg_efficiency || 0).toFixed(1)} Km/L`,
-            sub: 'Benchmark: >10.0',
+            sub: 'Patokan: >10.0',
             trend: 'Optimal',
             icon: Gauge,
             color: 'bg-gradient-to-br from-[#ffe600] to-[#e6d100]',
@@ -290,7 +290,7 @@ export default function DashboardPage() {
             label: 'Anomali Kritis',
             value: `${data?.anomaly_count || 0} Kasus`,
             sub: 'Butuh Verifikasi',
-            trend: 'Attention',
+            trend: 'Perhatian',
             icon: AlertTriangle,
             color: 'bg-gradient-to-br from-[#ba1a1a] to-[#9a1515]'
           },
@@ -486,7 +486,7 @@ export default function DashboardPage() {
 
                       <div className="flex items-center justify-between mt-auto">
                          <div className="flex items-center gap-2 text-[10px] font-black text-slate-400 uppercase">
-                            <Clock className="h-3.5 w-3.5" /> 18m Ago
+                            <Clock className="h-3.5 w-3.5" /> 18 Menit Lalu
                          </div>
                          <div className="flex items-center gap-1.5 text-pln-cyan group-hover/card:translate-x-1 transition-transform">
                             <span className="text-[10px] font-black uppercase">Verifikasi</span>
@@ -517,7 +517,7 @@ export default function DashboardPage() {
             </div>
             <div className="flex items-center gap-4">
                 <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-emerald-50 text-emerald-700 text-[9px] font-black uppercase tracking-widest">
-                   <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" /> Live Tracking
+                   <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" /> Pelacakan Langsung
                 </div>
             </div>
           </div>
@@ -526,27 +526,18 @@ export default function DashboardPage() {
              <div className="flex items-center gap-10">
                 <div className="flex items-center gap-3">
                    <div className="p-2 rounded-lg bg-white/10 text-pln-cyan shadow-inner"><Activity className="h-4 w-4" /></div>
-                   <div className="flex flex-col"><span className="text-[9px] text-white/50 font-bold uppercase tracking-tighter">Database</span><span className="text-[11px] text-white font-black leading-tight uppercase">Live Sync</span></div>
+                   <div className="flex flex-col"><span className="text-[9px] text-white/50 font-bold uppercase tracking-tighter">Basis Data</span><span className="text-[11px] text-white font-black leading-tight uppercase">Sinkronisasi</span></div>
                 </div>
-                <div className="flex flex-col border-l border-white/10 pl-6"><span className="text-[9px] text-white/50 font-bold uppercase tracking-tighter">Armada Online</span><span className="text-[11px] text-white font-black leading-tight">{data?.total_vehicles} / {data?.total_vehicles}</span></div>
-                <div className="flex flex-col border-l border-white/10 pl-6"><span className="text-[9px] text-white/50 font-bold uppercase tracking-tighter">Unit Node</span><span className="text-[11px] text-white font-black leading-tight">{data?.map_markers?.length || 0} Lokasi</span></div>
+                <div className="flex flex-col border-l border-white/10 pl-6"><span className="text-[9px] text-white/50 font-bold uppercase tracking-tighter">Armada Aktif</span><span className="text-[11px] text-white font-black leading-tight">{data?.total_vehicles} / {data?.total_vehicles}</span></div>
+                <div className="flex flex-col border-l border-white/10 pl-6"><span className="text-[9px] text-white/50 font-bold uppercase tracking-tighter">Titik Unit</span><span className="text-[11px] text-white font-black leading-tight">{data?.map_markers?.length || 0} Lokasi</span></div>
              </div>
              <div className="flex items-center gap-4 bg-black/20 px-4 py-2 rounded-xl border border-white/5">
-                <span className="text-[10px] text-white/70 font-black uppercase tracking-widest">SCADA SLA</span>
+                <span className="text-[10px] text-white/70 font-black uppercase tracking-widest">Keandalan Sistem</span>
                 <span className="text-[12px] text-pln-cyan font-black">99.98%</span>
              </div>
           </div>
 
           <KalimantanMap markers={data?.map_markers || []} />
-
-          <div className="p-5 bg-slate-50 border-t border-slate-100 flex items-center justify-between text-[10px] font-black text-slate-400 uppercase tracking-widest">
-             <div className="flex items-center gap-4">
-                <span className="flex items-center gap-2"><div className="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]" /> SCADA Grid Active</span>
-                <span className="text-slate-200">|</span>
-                <span>Signal Ping: 0.8s</span>
-             </div>
-             <p className="hidden md:block italic text-[9px] opacity-60">Protokol SCADA Terenkripsi • Danantara Indonesia</p>
-          </div>
         </Card>
       </div>
 
