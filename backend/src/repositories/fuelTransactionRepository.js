@@ -369,19 +369,18 @@ class FuelTransactionRepository {
     `;
     const mapMarkersQuery = `
       SELECT
-        v.ul_pln as label,
-        v.ul_nd as region,
-        COUNT(*) as vehicle_count,
-        MAX(ol.latitude)::float as lat,
-        MAX(ol.longitude)::float as lng
-      FROM fuel_transactions ft
-      JOIN vehicles v ON ft.vehicle_id = v.id
-      LEFT JOIN office_locations ol ON (
+        ol.office_name as label,
+        MAX(v.ul_nd) as region,
+        COUNT(DISTINCT v.id) as vehicle_count,
+        ol.latitude::float as lat,
+        ol.longitude::float as lng
+      FROM vehicles v
+      INNER JOIN office_locations ol ON (
         UPPER(v.ul_pln) ILIKE '%' || ol.office_name || '%' OR
         UPPER(v.ul_nd) ILIKE '%' || ol.office_name || '%'
       )
-      ${whereClause}
-      GROUP BY v.ul_pln, v.ul_nd
+      WHERE v.is_active = TRUE
+      GROUP BY ol.office_name, ol.latitude, ol.longitude
     `;
 
     const [statsRes, vehicleRes, ticketsRes, allocationRes, markersRes] = await Promise.all([
