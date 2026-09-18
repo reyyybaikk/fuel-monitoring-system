@@ -69,7 +69,7 @@ const KalimantanMap = ({ markers }: { markers: any[] }) => {
   };
 
   return (
-    <div className="relative w-full h-[450px] border border-border/60 rounded-xl overflow-hidden shadow-inner">
+    <div className="relative w-full h-[450px] border border-border/60 rounded-xl overflow-hidden shadow-inner bg-slate-100">
       <MapContainer
         center={[-2.5, 115.0] as any}
         zoom={7}
@@ -81,11 +81,11 @@ const KalimantanMap = ({ markers }: { markers: any[] }) => {
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
 
-        {markers.map((marker, i) => (
+        {markers.filter(m => m.lat && m.lng).map((marker, i) => (
           <Marker
             key={i}
             position={[marker.lat, marker.lng] as any}
-            icon={createCustomIcon(marker.label)}
+            icon={createCustomIcon(marker.label || 'Unit')}
           >
             <Popup>
               <div className="p-1 font-sans">
