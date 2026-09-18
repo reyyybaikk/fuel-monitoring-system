@@ -31,16 +31,102 @@ import {
 import { cn } from '@/lib/utils';
 import toast from 'react-hot-toast';
 
+// --- IMPORT LEAFLET SECARA DINAMIS (PENTING UNTUK NEXT.JS) ---
+import dynamic from 'next/dynamic';
+import 'leaflet/dist/leaflet.css';
+
+const MapContainer = dynamic(() => import('react-leaflet').then(mod => mod.MapContainer), { ssr: false });
+const TileLayer = dynamic(() => import('react-leaflet').then(mod => mod.TileLayer), { ssr: false });
+const Marker = dynamic(() => import('react-leaflet').then(mod => mod.Marker), { ssr: false });
+const Popup = dynamic(() => import('react-leaflet').then(mod => mod.Popup), { ssr: false });
+
+// --- SUB-KOMPONEN: REAL INTERACTIVE MAP ---
+const KalimantanMap = ({ markers }: { markers: any[] }) => {
+  const [L, setL] = useState<any>(null);
+
+  useEffect(() => {
+    // Inisialisasi ikon Leaflet khusus setelah komponen terpasang
+    import('leaflet').then(leaflet => {
+      setL(leaflet);
+    });
+  }, []);
+
+  if (!L) return <div className="w-full h-[400px] flex items-center justify-center bg-slate-50"><Loader2 className="animate-spin text-pln-cyan" /></div>;
+
+  const createCustomIcon = (color: string, isAnomaly: boolean) => {
+    return L.divIcon({
+      className: 'custom-div-icon',
+      html: `<div style="background-color: ${color}; width: 14px; height: 14px; border-radius: 50%; border: 2px solid white; box-shadow: 0 0 10px rgba(0,0,0,0.3); ${isAnomaly ? 'animation: bounce 0.5s infinite alternate;' : ''}"></div>`,
+      iconSize: [14, 14],
+      iconAnchor: [7, 7]
+    });
+  };
+
+  return (
+    <div className="relative w-full h-[400px] border border-border/60 rounded-xl overflow-hidden shadow-inner">
+      <style>{`
+        @keyframes bounce { from { transform: scale(1); } to { transform: scale(1.3); } }
+      `}</style>
+      <MapContainer
+        center={[-2.3, 114.5] as any}
+        zoom={7}
+        style={{ height: '100%', width: '100%' }}
+        scrollWheelZoom={true}
+      >
+        <TileLayer
+          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+        />
+
+        {markers.map((marker, i) => (
+          <Marker
+            key={i}
+            position={[marker.lat, marker.lng] as any}
+            icon={createCustomIcon(marker.anomaly_count > 0 ? '#ef4444' : '#10b981', marker.anomaly_count > 0)}
+          >
+            <Popup>
+              <div className="p-1 font-sans">
+                <span className="text-[10px] font-black uppercase text-pln-darkBlue border-b block mb-1">{marker.label}</span>
+                <div className="flex flex-col gap-0.5">
+                   <div className="flex justify-between text-[10px] gap-4">
+                     <span className="text-slate-500 font-bold">Total Armada:</span>
+                     <span className="font-black">{marker.vehicle_count} Unit</span>
+                   </div>
+                   {marker.anomaly_count > 0 && (
+                     <div className="flex justify-between text-[10px] text-red-600 font-bold">
+                       <span>Anomali Aktif:</span>
+                       <span>{marker.anomaly_count} Kasus</span>
+                     </div>
+                   )}
+                </div>
+              </div>
+            </Popup>
+          </Marker>
+        ))}
+      </MapContainer>
+
+      {/* Map Legend */}
+      <div className="absolute bottom-4 left-4 bg-white/90 backdrop-blur-md p-3 rounded-lg border border-border/60 shadow-md z-[500] flex flex-col gap-2">
+         <div className="flex items-center gap-2 text-[10px] font-black text-slate-700 uppercase">
+            <div className="w-3 h-3 rounded-full bg-emerald-500 border border-white" /> Siaga Normal
+         </div>
+         <div className="flex items-center gap-2 text-[10px] font-black text-slate-700 uppercase">
+            <div className="w-3 h-3 rounded-full bg-red-500 border border-white animate-pulse" /> Anomali Kritis
+         </div>
+      </div>
+    </div>
+  );
+};
+
 // --- SUB-KOMPONEN: DONUT CHART (SVG) ---
-const DonutChart = ({ data }: { data: any[] }) => {
-  const total = data.reduce((acc, curr) => acc + parseFloat(curr.value), 0);
+const DonutChart = ({ data, totalLiters }: { data: any[], totalLiters: number }) => {
   let currentAngle = 0;
 
   return (
     <div className="relative w-48 h-48 flex items-center justify-center">
       <svg viewBox="0 0 100 100" className="w-full h-full -rotate-90">
         {data.map((item, i) => {
-          const percentage = (parseFloat(item.value) / total) * 100;
+          const percentage = (parseFloat(item.value) / Math.max(totalLiters, 1)) * 100;
           const angle = (percentage / 100) * 360;
           const x1 = 50 + 40 * Math.cos((currentAngle * Math.PI) / 180);
           const y1 = 50 + 40 * Math.sin((currentAngle * Math.PI) / 180);
@@ -48,7 +134,7 @@ const DonutChart = ({ data }: { data: any[] }) => {
           const y2 = 50 + 40 * Math.sin(((currentAngle + angle) * Math.PI) / 180);
           const largeArc = angle > 180 ? 1 : 0;
 
-          const colors = ['#18a4c5', '#00A2E8', '#0b536f', '#ef4444'];
+          const colors = ['#18a4c5', '#00A2E8', '#0b536f', '#ef4444', '#f6e736'];
           const pathData = `M 50 50 L ${x1} ${y1} A 40 40 0 ${largeArc} 1 ${x2} ${y2} Z`;
           currentAngle += angle;
 
@@ -57,106 +143,9 @@ const DonutChart = ({ data }: { data: any[] }) => {
         <circle cx="50" cy="50" r="28" fill="white" />
       </svg>
       <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
-        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter leading-none">Total Armada</span>
-        <span className="text-xl font-black text-slate-800 leading-tight">110</span>
-        <span className="text-[9px] font-bold text-pln-cyan">64.8k Liter</span>
-      </div>
-    </div>
-  );
-};
-
-// --- SUB-KOMPONEN: INTERACTIVE MAP (SVG KALIMANTAN) ---
-const KalimantanMap = ({ markers }: { markers: any[] }) => {
-  const [zoom, setZoom] = useState(1);
-  const [offset, setOffset] = useState({ x: 0, y: 0 });
-  const [isDragging, setIsDragging] = useState(false);
-  const mapRef = useRef<HTMLDivElement>(null);
-
-  // Batas Peta Kalimantan (Approximate Coordinate Window)
-  // Lat: 4.5N to -4.5S, Lng: 108.5E to 119.5E
-  const getMapPos = (lat: number, lng: number) => {
-    const x = ((lng - 108.5) / (119.5 - 108.5)) * 100;
-    const y = (1 - (lat - (-4.5)) / (4.5 - (-4.5))) * 100;
-    return { x: `${x}%`, y: `${y}%` };
-  };
-
-  return (
-    <div className="relative w-full h-[400px] bg-slate-50 border border-border/60 rounded-xl overflow-hidden cursor-grab active:cursor-grabbing shadow-inner group" ref={mapRef}>
-      {/* Zoom Controls */}
-      <div className="absolute top-4 right-4 z-20 flex flex-col gap-2">
-        <button onClick={() => setZoom(prev => Math.min(prev + 0.5, 4))} className="w-8 h-8 rounded bg-white shadow-md border border-border flex items-center justify-center hover:bg-slate-50 active:scale-90 transition-all text-slate-700">
-           <Plus className="h-4 w-4" />
-        </button>
-        <button onClick={() => setZoom(prev => Math.max(prev - 0.5, 1))} className="w-8 h-8 rounded bg-white shadow-md border border-border flex items-center justify-center hover:bg-slate-50 active:scale-90 transition-all text-slate-700">
-           <Minus className="h-4 w-4" />
-        </button>
-      </div>
-
-      <div
-        className="w-full h-full transition-transform duration-300 ease-out flex items-center justify-center"
-        style={{ transform: `scale(${zoom}) translate(${offset.x}px, ${offset.y}px)` }}
-      >
-        <div className="relative w-[80%] h-[80%] opacity-20">
-          <svg viewBox="0 0 100 100" className="w-full h-full fill-slate-300">
-             {/* Simplified Kalimantan Silhouette */}
-             <path d="M45,10 C55,5 75,5 85,15 C95,25 98,40 95,55 C92,70 85,85 75,92 C65,98 45,95 30,85 C15,75 5,60 8,40 C12,20 25,10 45,10" />
-          </svg>
-        </div>
-
-        {/* Dynamic Markers from Database */}
-        {markers.map((marker, i) => {
-          const pos = getMapPos(marker.lat, marker.lng);
-          const hasAnomaly = marker.anomaly_count > 0;
-
-          return (
-            <div
-              key={i}
-              className="absolute group/pin"
-              style={{ left: pos.x, top: pos.y }}
-            >
-              <div className={cn(
-                "relative flex items-center justify-center",
-                hasAnomaly ? "animate-bounce" : ""
-              )}>
-                <div className={cn(
-                  "w-4 h-4 rounded-full border-2 border-white shadow-lg",
-                  hasAnomaly ? "bg-red-500" : "bg-emerald-500"
-                )} />
-                <div className={cn(
-                  "absolute inset-0 rounded-full animate-ping opacity-30",
-                  hasAnomaly ? "bg-red-500" : "bg-emerald-500"
-                )} />
-              </div>
-
-              {/* Marker Tooltip */}
-              <div className="absolute bottom-6 left-1/2 -translate-x-1/2 w-48 bg-[#0b1c30] text-white p-3 rounded-lg shadow-2xl opacity-0 group-hover/pin:opacity-100 pointer-events-none transition-all z-30 border border-white/10 scale-90 group-hover/pin:scale-100">
-                <span className="text-[10px] font-black uppercase text-pln-cyan block border-b border-white/10 pb-1.5 mb-2">{marker.label}</span>
-                <div className="flex flex-col gap-1.5">
-                   <div className="flex justify-between text-[11px] font-bold">
-                     <span className="text-slate-400">Total Unit:</span>
-                     <span>{marker.vehicle_count}</span>
-                   </div>
-                   {hasAnomaly && (
-                     <div className="flex justify-between text-[11px] font-bold text-red-400">
-                       <span>⚠️ Anomali:</span>
-                       <span>{marker.anomaly_count} Kasus</span>
-                     </div>
-                   )}
-                </div>
-              </div>
-            </div>
-          );
-        })}
-      </div>
-
-      {/* Map Legend */}
-      <div className="absolute bottom-4 left-4 bg-white/80 backdrop-blur-md p-3 rounded-lg border border-border/60 shadow-sm z-10 flex flex-col gap-2">
-         <div className="flex items-center gap-2 text-[10px] font-black text-slate-700 uppercase">
-            <div className="w-2.5 h-2.5 rounded-full bg-emerald-500" /> Armada Siaga Normal
-         </div>
-         <div className="flex items-center gap-2 text-[10px] font-black text-slate-700 uppercase">
-            <div className="w-2.5 h-2.5 rounded-full bg-red-500" /> Anomali Terdeteksi
-         </div>
+        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter leading-none">Alokasi</span>
+        <span className="text-xl font-black text-slate-800 leading-tight">BBM</span>
+        <span className="text-[9px] font-bold text-pln-cyan">{Number(totalLiters || 0).toLocaleString('id-ID')} L</span>
       </div>
     </div>
   );
@@ -347,12 +336,12 @@ export default function DashboardPage() {
             </div>
           </div>
           <div className="flex-1 p-6 flex flex-col items-center justify-center gap-8">
-            <DonutChart data={data?.allocation || []} />
+            <DonutChart data={data?.allocation || []} totalLiters={data?.total_liters || 0} />
             <div className="w-full space-y-2">
                {(data?.allocation || []).map((item: any, i: number) => (
                  <div key={i} className="flex items-center justify-between text-[11px] font-bold">
                     <div className="flex items-center gap-2">
-                       <div className={cn("w-2 h-2 rounded-full", i === 0 ? "bg-[#18a4c5]" : i === 1 ? "bg-[#00A2E8]" : "bg-[#0b536f]")} />
+                       <div className={cn("w-2 h-2 rounded-full", i === 0 ? "bg-[#18a4c5]" : i === 1 ? "bg-[#00A2E8]" : i === 2 ? "bg-[#0b536f]" : "bg-[#ef4444]")} />
                        <span className="text-slate-600 truncate max-w-[140px] uppercase">{item.label}</span>
                     </div>
                     <span className="text-slate-900">{((Number(item.value || 0) / Math.max(data?.total_liters, 1)) * 100).toFixed(0)}%</span>
