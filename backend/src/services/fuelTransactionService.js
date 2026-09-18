@@ -347,56 +347,53 @@ class FuelTransactionService {
         drawRowBorders(y, 15);
         y += 30;
 
-        // --- 3. LAMPIRAN BUKTI FISIK (Layout: 1 Baris 1 Foto Full) ---
+        // --- 3. LAMPIRAN BUKTI FISIK (Layout: 1 Halaman A4 = 1 Transaksi / 3 Foto) ---
         if (transactions.length > 0) {
-          doc.addPage();
-          doc.fontSize(10).font('Helvetica-Bold').text('LAMPIRAN BUKTI FISIK TRANSAKSI');
-          doc.moveDown(0.2);
-          doc.moveTo(42, doc.y).lineTo(180, doc.y).strokeColor('black').stroke();
-          doc.moveDown(1.5);
-
           for (const [index, tx] of transactions.entries()) {
+            doc.addPage();
+
+            // Header Transaksi per Halaman
+            doc.rect(42, 42, 511, 30).fill('#0b536f');
+            doc.fillColor('white').fontSize(10).font('Helvetica-Bold');
+            doc.text(`DOKUMENTASI TRANSAKSI #${index + 1}`, 55, 48);
+            doc.fontSize(8).font('Helvetica');
+            doc.text(`${tx.license_plate} • ${tx.vehicle_type} • ${new Date(tx.created_at).toLocaleString('id-ID')}`, 55, 58);
+
             const photoTypes = [
-              { key: 'odometer_photo_path', label: '1. Odometer Sebelum Pengisian' },
-              { key: 'odometer_after_photo_path', label: '2. Odometer / Fuel Bar Sesudah' },
-              { key: 'receipt_photo_path', label: '3. Nota / Struk Pembelian Fisik' }
+              { key: 'odometer_photo_path', label: '1. FOTO ODOMETER SEBELUM PENGISIAN' },
+              { key: 'odometer_after_photo_path', label: '2. FOTO ODOMETER / FUEL BAR SESUDAH' },
+              { key: 'receipt_photo_path', label: '3. FOTO NOTA / STRUK PEMBELIAN FISIK' }
             ];
 
+            let currentY = 85;
+            const imageWidth = 511;
+            const imageHeight = 215; // Ukuran optimal agar 3 foto + header muat di satu halaman A4
+
             for (const photo of photoTypes) {
-              // Jika sisa halaman kurang dari 250 unit, buat halaman baru
-              if (doc.y > 650) doc.addPage();
+              // Sub-Header Foto
+              doc.rect(42, currentY, 511, 15).fill('#f1f5f9');
+              doc.fillColor('#1e293b').fontSize(7).font('Helvetica-Bold');
+              doc.text(photo.label, 50, currentY + 4);
 
-              const entryTop = doc.y;
-              // Header Label untuk setiap foto
-              doc.rect(42, entryTop, 511, 20).fill('#f1f5f9');
-              doc.fillColor('#1e293b').fontSize(8).font('Helvetica-Bold');
-              doc.text(`DATA #${index + 1} - ${tx.license_plate} | ${photo.label}`, 50, entryTop + 6);
-
-              doc.y = entryTop + 25;
-              const imageWidth = 511;
-              const imageHeight = 340;
-              const imageX = 42;
+              currentY += 20;
 
               const imgPath = tx[photo.key];
               if (imgPath) {
                 try {
                   let imgUrl = imgPath.startsWith('http') ? imgPath : `https://jgqpxhoyqrfvspmpopqa.supabase.co/storage/v1/object/public/uploads/${imgPath}`;
-                  // Peningkatan timeout untuk download foto besar
                   const response = await axios.get(imgUrl, { responseType: 'arraybuffer', timeout: 15000 });
-                  doc.image(response.data, imageX, doc.y, { fit: [imageWidth, imageHeight], align: 'center', valign: 'center' });
+                  doc.image(response.data, 42, currentY, { fit: [imageWidth, imageHeight], align: 'center', valign: 'center' });
 
-                  // Bingkai foto
-                  doc.rect(imageX, doc.y, imageWidth, imageHeight).strokeColor('#cbd5e1').stroke();
-                  doc.y += imageHeight + 25;
+                  // Bingkai Foto
+                  doc.rect(42, currentY, imageWidth, imageHeight).strokeColor('#cbd5e1').stroke();
                 } catch (err) {
-                  doc.fillColor('red').fontSize(8).text('[Gagal memuat bukti visual dari server]', imageX, doc.y + 20, { width: imageWidth, align: 'center' });
-                  doc.y += 60;
+                  doc.fillColor('red').fontSize(8).text('[Gagal memuat bukti visual dari server]', 42, currentY + 100, { width: imageWidth, align: 'center' });
                 }
               } else {
-                doc.fillColor('#94a3b8').fontSize(8).text('[Berkas foto tidak tersedia]', imageX, doc.y + 20, { width: imageWidth, align: 'center' });
-                doc.y += 60;
+                doc.fillColor('#94a3b8').fontSize(8).text('[Berkas foto tidak tersedia]', 42, currentY + 100, { width: imageWidth, align: 'center' });
               }
-              doc.moveDown(1);
+
+              currentY += imageHeight + 15;
             }
           }
         }
