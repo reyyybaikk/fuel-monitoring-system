@@ -45,7 +45,6 @@ const KalimantanMap = ({ markers }: { markers: any[] }) => {
   const [L, setL] = useState<any>(null);
 
   useEffect(() => {
-    // Inisialisasi ikon Leaflet khusus setelah komponen terpasang
     import('leaflet').then(leaflet => {
       setL(leaflet);
     });
@@ -53,28 +52,32 @@ const KalimantanMap = ({ markers }: { markers: any[] }) => {
 
   if (!L) return <div className="w-full h-[400px] flex items-center justify-center bg-slate-50"><Loader2 className="animate-spin text-pln-cyan" /></div>;
 
-  const createCustomIcon = (color: string, isAnomaly: boolean) => {
+  const createCustomIcon = (label: string) => {
     return L.divIcon({
       className: 'custom-div-icon',
-      html: `<div style="background-color: ${color}; width: 14px; height: 14px; border-radius: 50%; border: 2px solid white; box-shadow: 0 0 10px rgba(0,0,0,0.3); ${isAnomaly ? 'animation: bounce 0.5s infinite alternate;' : ''}"></div>`,
-      iconSize: [14, 14],
-      iconAnchor: [7, 7]
+      html: `
+        <div style="display: flex; flex-direction: column; align-items: center; justify-content: center;">
+          <div style="background-color: #00a2e8; width: 12px; height: 12px; border-radius: 50%; border: 2px solid white; box-shadow: 0 0 8px rgba(0,162,232,0.5);"></div>
+          <div style="background-color: rgba(11,83,111,0.9); color: white; padding: 2px 6px; border-radius: 4px; font-size: 8px; font-weight: 800; white-space: nowrap; margin-top: 4px; border: 1px solid rgba(255,255,255,0.2); box-shadow: 0 4px 6px rgba(0,0,0,0.2); text-transform: uppercase; letter-spacing: 0.5px;">
+            ${label.replace('ULP ', '').replace('UL ', '').replace('KP ', '')}
+          </div>
+        </div>
+      `,
+      iconSize: [60, 40],
+      iconAnchor: [30, 6]
     });
   };
 
   return (
-    <div className="relative w-full h-[400px] border border-border/60 rounded-xl overflow-hidden shadow-inner">
-      <style>{`
-        @keyframes bounce { from { transform: scale(1); } to { transform: scale(1.3); } }
-      `}</style>
+    <div className="relative w-full h-[450px] border border-border/60 rounded-xl overflow-hidden shadow-inner">
       <MapContainer
-        center={[-2.3, 114.5] as any}
+        center={[-2.5, 115.0] as any}
         zoom={7}
         style={{ height: '100%', width: '100%' }}
         scrollWheelZoom={true}
       >
         <TileLayer
-          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+          attribution='&copy; OpenStreetMap'
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
 
@@ -82,38 +85,26 @@ const KalimantanMap = ({ markers }: { markers: any[] }) => {
           <Marker
             key={i}
             position={[marker.lat, marker.lng] as any}
-            icon={createCustomIcon(marker.anomaly_count > 0 ? '#ef4444' : '#10b981', marker.anomaly_count > 0)}
+            icon={createCustomIcon(marker.label)}
           >
             <Popup>
               <div className="p-1 font-sans">
                 <span className="text-[10px] font-black uppercase text-pln-darkBlue border-b block mb-1">{marker.label}</span>
                 <div className="flex flex-col gap-0.5">
                    <div className="flex justify-between text-[10px] gap-4">
-                     <span className="text-slate-500 font-bold">Total Armada:</span>
+                     <span className="text-slate-500 font-bold">Total Unit Armada:</span>
                      <span className="font-black">{marker.vehicle_count} Unit</span>
                    </div>
-                   {marker.anomaly_count > 0 && (
-                     <div className="flex justify-between text-[10px] text-red-600 font-bold">
-                       <span>Anomali Aktif:</span>
-                       <span>{marker.anomaly_count} Kasus</span>
-                     </div>
-                   )}
+                   <div className="flex justify-between text-[10px] gap-4">
+                     <span className="text-slate-500 font-bold">Wilayah Otoritas:</span>
+                     <span className="font-black text-pln-cyan uppercase">{marker.region}</span>
+                   </div>
                 </div>
               </div>
             </Popup>
           </Marker>
         ))}
       </MapContainer>
-
-      {/* Map Legend */}
-      <div className="absolute bottom-4 left-4 bg-white/90 backdrop-blur-md p-3 rounded-lg border border-border/60 shadow-md z-[500] flex flex-col gap-2">
-         <div className="flex items-center gap-2 text-[10px] font-black text-slate-700 uppercase">
-            <div className="w-3 h-3 rounded-full bg-emerald-500 border border-white" /> Siaga Normal
-         </div>
-         <div className="flex items-center gap-2 text-[10px] font-black text-slate-700 uppercase">
-            <div className="w-3 h-3 rounded-full bg-red-500 border border-white animate-pulse" /> Anomali Kritis
-         </div>
-      </div>
     </div>
   );
 };
