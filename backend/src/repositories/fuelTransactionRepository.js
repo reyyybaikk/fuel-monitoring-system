@@ -372,11 +372,16 @@ class FuelTransactionRepository {
         v.ul_pln as label,
         v.ul_nd as region,
         COUNT(*) as vehicle_count,
-        COUNT(CASE WHEN ft.ml_is_anomaly = TRUE THEN 1 END) as anomaly_count
+        ol.latitude as lat,
+        ol.longitude as lng
       FROM fuel_transactions ft
       JOIN vehicles v ON ft.vehicle_id = v.id
+      LEFT JOIN office_locations ol ON (
+        UPPER(v.ul_pln) ILIKE '%' || ol.office_name || '%' OR
+        UPPER(v.ul_nd) ILIKE '%' || ol.office_name || '%'
+      )
       ${whereClause}
-      GROUP BY v.ul_pln, v.ul_nd
+      GROUP BY v.ul_pln, v.ul_nd, ol.latitude, ol.longitude
     `;
 
     const [statsRes, vehicleRes, ticketsRes, allocationRes, markersRes] = await Promise.all([
