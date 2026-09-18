@@ -347,7 +347,7 @@ class FuelTransactionService {
         drawRowBorders(y, 15);
         y += 30;
 
-        // --- 3. LAMPIRAN BUKTI FISIK (Identik Web Layout) ---
+        // --- 3. LAMPIRAN BUKTI FISIK (Layout: 1 Baris 1 Foto Full) ---
         if (transactions.length > 0) {
           doc.addPage();
           doc.fontSize(10).font('Helvetica-Bold').text('LAMPIRAN BUKTI FISIK TRANSAKSI');
@@ -356,52 +356,48 @@ class FuelTransactionService {
           doc.moveDown(1.5);
 
           for (const [index, tx] of transactions.entries()) {
-            // Check remaining space for a full entry (Approx 200 units needed)
-            if (doc.y > 600) doc.addPage();
-
-            const entryTop = doc.y;
-            doc.fontSize(8).font('Helvetica-Bold').fillColor('#1e293b');
-            doc.rect(42, entryTop, 511, 15).fill('#f1f5f9');
-            doc.fillColor('black').text(`DATA #${index + 1} - ${tx.license_plate} • ${new Date(tx.created_at).toLocaleString('id-ID')}`, 48, entryTop + 4);
-
-            doc.moveDown(1);
-            const imageY = doc.y;
-            const imageWidth = 165;
-            const imageHeight = 110;
-            const gap = 8;
-
             const photoTypes = [
-              { key: 'odometer_photo_path', label: '1. Odo Sebelum' },
-              { key: 'odometer_after_photo_path', label: '2. Odo Sesudah' },
-              { key: 'receipt_photo_path', label: '3. Nota / Struk' }
+              { key: 'odometer_photo_path', label: '1. Odometer Sebelum Pengisian' },
+              { key: 'odometer_after_photo_path', label: '2. Odometer / Fuel Bar Sesudah' },
+              { key: 'receipt_photo_path', label: '3. Nota / Struk Pembelian Fisik' }
             ];
 
-            for (let i = 0; i < photoTypes.length; i++) {
-              const photo = photoTypes[i];
-              const xPos = 42 + (i * (imageWidth + gap));
+            for (const photo of photoTypes) {
+              // Jika sisa halaman kurang dari 250 unit, buat halaman baru
+              if (doc.y > 650) doc.addPage();
 
-              // Header Label Box
-              doc.fontSize(6).font('Helvetica-Bold').fillColor('#4b5563');
-              doc.rect(xPos, imageY, imageWidth, 12).fill('#f8fafc');
-              doc.fillColor('#4b5563').text(photo.label, xPos, imageY + 3, { width: imageWidth, align: 'center' });
+              const entryTop = doc.y;
+              // Header Label untuk setiap foto
+              doc.rect(42, entryTop, 511, 20).fill('#f1f5f9');
+              doc.fillColor('#1e293b').fontSize(8).font('Helvetica-Bold');
+              doc.text(`DATA #${index + 1} - ${tx.license_plate} | ${photo.label}`, 50, entryTop + 6);
+
+              doc.y = entryTop + 25;
+              const imageWidth = 511;
+              const imageHeight = 340;
+              const imageX = 42;
 
               const imgPath = tx[photo.key];
               if (imgPath) {
                 try {
                   let imgUrl = imgPath.startsWith('http') ? imgPath : `https://jgqpxhoyqrfvspmpopqa.supabase.co/storage/v1/object/public/uploads/${imgPath}`;
-                  const response = await axios.get(imgUrl, { responseType: 'arraybuffer', timeout: 10000 });
-                  doc.image(response.data, xPos, imageY + 14, { fit: [imageWidth, imageHeight], align: 'center', valign: 'center' });
-                  // Draw Border for Image
-                  doc.rect(xPos, imageY + 14, imageWidth, imageHeight).strokeColor('#cbd5e1').stroke();
+                  // Peningkatan timeout untuk download foto besar
+                  const response = await axios.get(imgUrl, { responseType: 'arraybuffer', timeout: 15000 });
+                  doc.image(response.data, imageX, doc.y, { fit: [imageWidth, imageHeight], align: 'center', valign: 'center' });
+
+                  // Bingkai foto
+                  doc.rect(imageX, doc.y, imageWidth, imageHeight).strokeColor('#cbd5e1').stroke();
+                  doc.y += imageHeight + 25;
                 } catch (err) {
-                  doc.fontSize(6).fillColor('red').text('[Gagal memuat bukti]', xPos, imageY + 50, { width: imageWidth, align: 'center' }).fillColor('black');
+                  doc.fillColor('red').fontSize(8).text('[Gagal memuat bukti visual dari server]', imageX, doc.y + 20, { width: imageWidth, align: 'center' });
+                  doc.y += 60;
                 }
               } else {
-                doc.fontSize(6).fillColor('#94a3b8').text('[Tanpa Berkas]', xPos, imageY + 50, { width: imageWidth, align: 'center' });
+                doc.fillColor('#94a3b8').fontSize(8).text('[Berkas foto tidak tersedia]', imageX, doc.y + 20, { width: imageWidth, align: 'center' });
+                doc.y += 60;
               }
+              doc.moveDown(1);
             }
-
-            doc.y = imageY + imageHeight + 25;
           }
         }
 
