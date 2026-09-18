@@ -335,7 +335,8 @@ class FuelTransactionRepository {
       SELECT
         SUM(ft.fuel_amount) as total_liters,
         SUM(ft.total_cost) as total_cost,
-        COUNT(CASE WHEN ft.ml_is_anomaly = TRUE THEN 1 END) as anomaly_count
+        COUNT(CASE WHEN ft.ml_is_anomaly = TRUE THEN 1 END) as anomaly_count,
+        AVG(CASE WHEN ft.real_fuel_consumption > 0 THEN ft.real_fuel_consumption END) as avg_efficiency
       FROM fuel_transactions ft
       JOIN vehicles v ON ft.vehicle_id = v.id
       ${whereClause}
@@ -347,33 +348,55 @@ class FuelTransactionRepository {
       FROM vehicles
       ${vehicleWhereClause}
     `;
-    const recentAnomaliesQuery = `
-      SELECT ft.id, v.license_plate as plate, ft.ml_anomaly_score as score, ft.notes
+    const ticketStatsQuery = `
+      SELECT
+        COUNT(CASE WHEN status = 'PENDING' THEN 1 END) as pending_tickets,
+        COUNT(CASE WHEN status = 'REVIEW' THEN 1 END) as investigation_tickets,
+        COUNT(CASE WHEN status = 'APPROVED' OR status = 'COMPLETED' THEN 1 END) as completed_tickets
       FROM fuel_transactions ft
       JOIN vehicles v ON ft.vehicle_id = v.id
-      ${whereClause} AND ft.ml_is_anomaly = TRUE
-      ORDER BY ft.created_at DESC
-      LIMIT 5
+      ${whereClause}
+    `;
+    const allocationQuery = `
+      SELECT
+        COALESCE(v.usage_purpose, 'Lainnya') as label,
+        SUM(ft.fuel_amount) as value
+      FROM fuel_transactions ft
+      JOIN vehicles v ON ft.vehicle_id = v.id
+      ${whereClause}
+      GROUP BY COALESCE(v.usage_purpose, 'Lainnya')
+      ORDER BY value DESC
+    `;
+    const mapMarkersQuery = `
+      SELECT
+        v.ul_pln as label,
+        v.ul_nd as region,
+        COUNT(*) as vehicle_count,
+        COUNT(CASE WHEN ft.ml_is_anomaly = TRUE THEN 1 END) as anomaly_count
+      FROM fuel_transactions ft
+      JOIN vehicles v ON ft.vehicle_id = v.id
+      ${whereClause}
+      GROUP BY v.ul_pln, v.ul_nd
     `;
 
-    const [statsRes, vehicleRes, anomaliesRes] = await Promise.all([
+    const [statsRes, vehicleRes, ticketsRes, allocationRes, markersRes] = await Promise.all([
       db.query(statsQuery, values),
       db.query(vehicleQuery, values),
-      db.query(recentAnomaliesQuery, values)
+      db.query(ticketStatsQuery, values),
+      db.query(allocationQuery, values),
+      db.query(mapMarkersQuery, values)
     ]);
 
-    const stats = statsRes.rows[0];
-    const vehicles = vehicleRes.rows[0];
-
     return {
-      total_liters: parseFloat(stats.total_liters) || 0,
-      total_cost: parseFloat(stats.total_cost) || 0,
-      anomaly_count: parseInt(stats.anomaly_count, 10) || 0,
-      total_vehicles: parseInt(vehicles.total_vehicles, 10) || 0,
-      active_vehicles: parseInt(vehicles.active_vehicles, 10) || 0,
-      liter_change_percentage: 4.2, // Placeholder default
-      cost_change_percentage: -1.8, // Placeholder default
-      recent_anomalies: anomaliesRes.rows
+      total_liters: parseFloat(statsRes.rows[0].total_liters) || 0,
+      total_cost: parseFloat(statsRes.rows[0].total_cost) || 0,
+      anomaly_count: parseInt(statsRes.rows[0].anomaly_count, 10) || 0,
+      avg_efficiency: parseFloat(statsRes.rows[0].avg_efficiency) || 0,
+      total_vehicles: parseInt(vehicleRes.rows[0].total_vehicles, 10) || 0,
+      active_vehicles: parseInt(vehicleRes.rows[0].active_vehicles, 10) || 0,
+      tickets: ticketsRes.rows[0],
+      allocation: allocationRes.rows,
+      map_markers: markersRes.rows
     };
   }
 
@@ -381,12 +404,6 @@ class FuelTransactionRepository {
     let whereClause = 'WHERE 1=1';
     const values = [];
     let paramIndex = 1;
-
-    if (start && end) {
-      whereClause += ` AND ft.created_at BETWEEN $${paramIndex} AND $${paramIndex + 1}`;
-      values.push(start, end);
-      paramIndex += 2;
-    }
 
     if (role === 'ADMIN_WILAYAH' || role === 'ADMIN') {
       if (region) {
@@ -397,17 +414,18 @@ class FuelTransactionRepository {
       }
     }
 
+    // Perbaikan: Ambil tren bulanan (Monthly Trend) untuk chart bar
     let query = `
       SELECT
-        TO_CHAR(ft.created_at, 'Dy') as day,
+        TO_CHAR(ft.created_at, 'Mon') as label,
         SUM(ft.fuel_amount) as value,
-        BOOL_OR(ft.ml_is_anomaly) as is_anomaly
+        SUM(CASE WHEN ft.ml_is_anomaly = TRUE THEN ft.fuel_amount ELSE 0 END) as anomaly_value
       FROM fuel_transactions ft
       JOIN vehicles v ON ft.vehicle_id = v.id
       ${whereClause}
-      GROUP BY TO_CHAR(ft.created_at, 'Dy'), DATE_TRUNC('day', ft.created_at)
-      ORDER BY DATE_TRUNC('day', ft.created_at) ASC
-      LIMIT 7`;
+      GROUP BY TO_CHAR(ft.created_at, 'Mon'), DATE_TRUNC('month', ft.created_at)
+      ORDER BY DATE_TRUNC('month', ft.created_at) ASC
+      LIMIT 12`;
 
     const result = await db.query(query, values);
     return result.rows;

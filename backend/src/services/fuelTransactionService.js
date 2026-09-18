@@ -188,24 +188,65 @@ class FuelTransactionService {
     // Tentukan filter wilayah
     const filterRegion = user.role === 'ADMIN_PUSAT' ? (ul_nd || null) : user.region;
 
-    // Tentukan rentang waktu untuk grafik
-    let days = 7;
-    if (range === '1d') days = 1;
-    if (range === '30d') days = 30;
-
     const end = new Date();
     const start = new Date();
-    start.setDate(start.getDate() - days);
+    start.setMonth(start.getMonth() - 6); // Ambil 6 bulan terakhir untuk tren
 
-    // Ambil data summary dan analytics secara paralel
-    const [summary, chartData] = await Promise.all([
+    // Ambil data summary, tren bulanan, dan transaksi terbaru
+    const [summary, monthlyTrend, recentTransactions] = await Promise.all([
       fuelTransactionRepository.getSummary(user.role, filterRegion),
-      fuelTransactionRepository.getAnalytics(start.toISOString(), end.toISOString(), user.role, filterRegion)
+      fuelTransactionRepository.getAnalytics(start.toISOString(), end.toISOString(), user.role, filterRegion),
+      fuelTransactionRepository.findAll({
+        limit: 10, offset: 0,
+        role: user.role, region: filterRegion
+      })
     ]);
+
+    // --- LOGIKA MAPPING KOORDINAT KALIMANTAN ---
+    const coordMap = {
+      'BANJARMASIN': { lat: -3.3194, lng: 114.5908 },
+      'BARABAI': { lat: -2.5833, lng: 115.3833 },
+      'PALANGKARAYA': { lat: -2.21, lng: 113.92 },
+      'PANGKALAN BUN': { lat: -2.6833, lng: 111.6167 },
+      'KAPUAS': { lat: -3.0167, lng: 114.3833 },
+      'SAMPIT': { lat: -2.5333, lng: 112.95 },
+      'BANJARBARU': { lat: -3.4422, lng: 114.8303 },
+      'MARTAPURA': { lat: -3.4167, lng: 114.85 },
+      'PELAIHARI': { lat: -3.7944, lng: 114.7733 },
+      'KANDANGAN': { lat: -2.7833, lng: 115.25 },
+      'RANTAU': { lat: -2.9333, lng: 115.15 },
+      'TANJUNG': { lat: -2.1833, lng: 115.3833 },
+      'AMUNTAI': { lat: -2.4167, lng: 115.25 },
+      'BUNTOK': { lat: -1.7167, lng: 114.85 },
+      'MUARA TEWEH': { lat: -0.95, lng: 114.88 },
+      'PURUK CAHU': { lat: -0.6167, lng: 114.5667 },
+      'NANGABULIK': { lat: -2.0222, lng: 111.4333 },
+      'SUKAMARA': { lat: -2.6333, lng: 111.2333 }
+    };
+
+    const markers = (summary.map_markers || []).map(m => {
+      const labelUpper = (m.label || '').toUpperCase();
+      let coords = { lat: -3.0, lng: 114.0 }; // Default Kalsel Center
+
+      // Cari kecocokan nama kota di dalam string ul_pln
+      for (const entry of Object.entries(coordMap)) {
+        if (labelUpper.includes(entry[0])) {
+          coords = entry[1];
+          break;
+        }
+      }
+
+      return {
+        ...m,
+        ...coords
+      };
+    });
 
     return {
       ...summary,
-      chart_data: chartData
+      chart_data: monthlyTrend,
+      recent_activities: recentTransactions,
+      map_markers: markers
     };
   }
 
