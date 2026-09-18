@@ -398,20 +398,6 @@ class FuelTransactionService {
           }
         }
 
-        // --- 4. PENGESAHAN (Identik Web Layout) ---
-        if (doc.y > 700) doc.addPage();
-        doc.moveDown(4);
-        const footerY = doc.y;
-        doc.fontSize(9).font('Helvetica-Bold');
-
-        doc.text('Mengetahui,', 42, footerY, { align: 'center', width: 200 });
-        doc.font('Helvetica-Oblique').text('Manajer Unit Layanan', 42, footerY + 12, { align: 'center', width: 200 });
-        doc.font('Helvetica-Bold').text('( ............................ )', 42, footerY + 80, { align: 'center', width: 200 });
-
-        doc.text('Dibuat Oleh,', 353, footerY, { align: 'center', width: 200 });
-        doc.font('Helvetica-Oblique').text('Admin Pengawas Wilayah', 353, footerY + 12, { align: 'center', width: 200 });
-        doc.font('Helvetica-Bold').text(user.full_name || 'Admin', 353, footerY + 80, { align: 'center', width: 200 });
-
         doc.end();
       } catch (err) {
         reject(err);
