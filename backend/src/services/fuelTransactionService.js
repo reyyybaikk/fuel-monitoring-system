@@ -202,58 +202,12 @@ class FuelTransactionService {
       })
     ]);
 
-    // --- LOGIKA MAPPING KOORDINAT KALIMANTAN (REVISI: WILAYAH UNIT ASLI) ---
-    const coordMap = {
-      'BANJARMASIN': { lat: -3.3194, lng: 114.5908 },
-      'BJM': { lat: -3.3194, lng: 114.5908 },
-      'BARABAI': { lat: -2.5833, lng: 115.3833 },
-      'PALANGKARAYA': { lat: -2.21, lng: 113.92 },
-      'PRY': { lat: -2.21, lng: 113.92 },
-      'PANGKALAN BUN': { lat: -2.6833, lng: 111.6167 },
-      'P.BUN': { lat: -2.6833, lng: 111.6167 },
-      'PBUN': { lat: -2.6833, lng: 111.6167 },
-      'KAPUAS': { lat: -3.0167, lng: 114.3833 },
-      'SAMPIT': { lat: -2.5333, lng: 112.95 },
-      'BANJARBARU': { lat: -3.4422, lng: 114.8303 },
-      'MARTAPURA': { lat: -3.4167, lng: 114.85 },
-      'PELAIHARI': { lat: -3.7944, lng: 114.7733 },
-      'KANDANGAN': { lat: -2.7833, lng: 115.25 },
-      'RANTAU': { lat: -2.9333, lng: 115.15 },
-      'TANJUNG': { lat: -2.1833, lng: 115.3833 },
-      'AMUNTAI': { lat: -2.4167, lng: 115.25 },
-      'BUNTOK': { lat: -1.7167, lng: 114.85 },
-      'MUARA TEWEH': { lat: -0.95, lng: 114.88 },
-      'PURUK CAHU': { lat: -0.6167, lng: 114.5667 },
-      'NANGABULIK': { lat: -2.0222, lng: 111.4333 },
-      'SUKAMARA': { lat: -2.6333, lng: 111.2333 },
-      'MARABAHAN': { lat: -3.18, lng: 114.77 },
-      'TAMIANG LAYANG': { lat: -2.14, lng: 115.11 },
-      'PULANG PISAU': { lat: -2.75, lng: 114.25 },
-      'KASONGAN': { lat: -1.90, lng: 113.38 },
-      'KUALA KURUN': { lat: -1.27, lng: 113.88 },
-      'GAMBUT': { lat: -3.41, lng: 114.65 },
-      'AMPAH': { lat: -2.08, lng: 115.05 }
-    };
-
-    const markers = (summary.map_markers || []).map(m => {
-      const labelUpper = (m.label || '').toUpperCase();
-      let coords = { lat: -3.0, lng: 114.0 }; // Default Kalsel Center
-
-      // Cari kecocokan kata kunci nama kota/unit dalam string ul_pln
-      for (const entry of Object.entries(coordMap)) {
-        if (labelUpper.includes(entry[0])) {
-          coords = entry[1];
-          break;
-        }
-      }
-
-      return {
-        label: m.label || 'Unit Layanan',
-        region: m.region,
-        vehicle_count: m.vehicle_count,
-        ...coords
-      };
-    });
+    // Memastikan koordinat marker dikonversi ke format angka (float) untuk Frontend
+    const markers = (summary.map_markers || []).map(m => ({
+      ...m,
+      lat: parseFloat(m.lat || -3.0),
+      lng: parseFloat(m.lng || 114.0)
+    }));
 
     return {
       ...summary,

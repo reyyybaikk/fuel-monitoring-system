@@ -372,8 +372,8 @@ class FuelTransactionRepository {
         v.ul_pln as label,
         v.ul_nd as region,
         COUNT(*) as vehicle_count,
-        ol.latitude as lat,
-        ol.longitude as lng
+        MAX(ol.latitude)::float as lat,
+        MAX(ol.longitude)::float as lng
       FROM fuel_transactions ft
       JOIN vehicles v ON ft.vehicle_id = v.id
       LEFT JOIN office_locations ol ON (
@@ -381,7 +381,7 @@ class FuelTransactionRepository {
         UPPER(v.ul_nd) ILIKE '%' || ol.office_name || '%'
       )
       ${whereClause}
-      GROUP BY v.ul_pln, v.ul_nd, ol.latitude, ol.longitude
+      GROUP BY v.ul_pln, v.ul_nd
     `;
 
     const [statsRes, vehicleRes, ticketsRes, allocationRes, markersRes] = await Promise.all([
