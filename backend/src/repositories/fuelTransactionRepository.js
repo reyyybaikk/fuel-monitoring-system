@@ -129,14 +129,12 @@ class FuelTransactionRepository {
       query += ` AND ft.driver_id = $${paramIndex}`;
       values.push(userId);
       paramIndex++;
-    } else if (role === 'ADMIN_WILAYAH' || role === 'ADMIN') {
-      // Jika Admin Wilayah, kunci data hanya untuk wilayahnya
-      if (region) {
-        const cleanRegion = region.replace('Unit Layanan ', '').trim();
-        query += ` AND (v.ul_nd ILIKE $${paramIndex} OR v.ul_pln ILIKE $${paramIndex})`;
-        values.push(`%${cleanRegion}%`);
-        paramIndex++;
-      }
+    } else if (region) {
+      // Jika ada region (dari profil Admin Wilayah atau dari filter Admin Pusat)
+      const cleanRegion = region.replace('Unit Layanan ', '').trim();
+      query += ` AND (v.ul_nd ILIKE $${paramIndex} OR v.ul_pln ILIKE $${paramIndex})`;
+      values.push(`%${cleanRegion}%`);
+      paramIndex++;
     }
     // Jika role === 'ADMIN_PUSAT', tidak ada filter wilayah (bisa lihat semua)
 
@@ -321,14 +319,12 @@ class FuelTransactionRepository {
     const values = [];
     let paramIndex = 1;
 
-    if (role === 'ADMIN_WILAYAH' || role === 'ADMIN') {
-      if (region) {
-        const cleanRegion = region.replace('Unit Layanan ', '').trim();
-        whereClause += ` AND (v.ul_nd ILIKE $${paramIndex} OR v.ul_pln ILIKE $${paramIndex})`;
-        vehicleWhereClause += ` AND (ul_nd ILIKE $${paramIndex} OR ul_pln ILIKE $${paramIndex})`;
-        values.push(`%${cleanRegion}%`);
-        paramIndex++;
-      }
+    if (region) {
+      const cleanRegion = region.replace('Unit Layanan ', '').trim();
+      whereClause += ` AND (v.ul_nd ILIKE $${paramIndex} OR v.ul_pln ILIKE $${paramIndex})`;
+      vehicleWhereClause += ` AND (ul_nd ILIKE $${paramIndex} OR ul_pln ILIKE $${paramIndex})`;
+      values.push(`%${cleanRegion}%`);
+      paramIndex++;
     }
 
     const statsQuery = `
@@ -379,7 +375,7 @@ class FuelTransactionRepository {
         UPPER(v.ul_pln) ILIKE '%' || ol.office_name || '%' OR
         UPPER(v.ul_nd) ILIKE '%' || ol.office_name || '%'
       )
-      WHERE v.is_active = TRUE
+      ${vehicleWhereClause} AND v.is_active = TRUE
       GROUP BY ol.office_name, ol.latitude, ol.longitude
     `;
 
@@ -409,13 +405,11 @@ class FuelTransactionRepository {
     const values = [];
     let paramIndex = 1;
 
-    if (role === 'ADMIN_WILAYAH' || role === 'ADMIN') {
-      if (region) {
-        const cleanRegion = region.replace('Unit Layanan ', '').trim();
-        whereClause += ` AND (v.ul_nd ILIKE $${paramIndex} OR v.ul_pln ILIKE $${paramIndex})`;
-        values.push(`%${cleanRegion}%`);
-        paramIndex++;
-      }
+    if (region) {
+      const cleanRegion = region.replace('Unit Layanan ', '').trim();
+      whereClause += ` AND (v.ul_nd ILIKE $${paramIndex} OR v.ul_pln ILIKE $${paramIndex})`;
+      values.push(`%${cleanRegion}%`);
+      paramIndex++;
     }
 
     // Perbaikan: Ambil tren bulanan (Monthly Trend) untuk chart bar
