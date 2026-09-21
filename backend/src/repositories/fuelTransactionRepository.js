@@ -249,7 +249,7 @@ class FuelTransactionRepository {
 
   async findById(id) {
     const query = `
-      SELECT ft.id, ft.vehicle_id, v.license_plate, ft.driver_id, u.full_name as driver_name,
+      SELECT ft.id, ft.vehicle_id, v.license_plate, ft.driver_id, u.full_name as driver_name, u.whatsapp_number,
              ft.filling_source, ft.fuel_type, ft.fuel_amount, ft.odometer, ft.total_cost,
              ft.latitude, ft.longitude, ft.address, ft.status, ft.notes,
              (ft.odometer_photo_path IS NOT NULL) AS has_odometer_photo,
