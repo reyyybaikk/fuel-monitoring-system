@@ -17,7 +17,10 @@ const fuelTransactionRoutes = require('./routes/fuelTransactionRoutes');
 const app = express();
 
 // Global Middleware
-app.use(cors());
+app.use(cors({
+  origin: process.env.CORS_ORIGIN?.split(',') || ['https://fuel-monitoring-bbm-frontend-gamma.vercel.app'],
+  credentials: true,
+}));
 app.use(express.json());
 app.use(requestLogger);
 
