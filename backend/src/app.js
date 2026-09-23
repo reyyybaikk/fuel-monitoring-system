@@ -13,6 +13,7 @@ const authRoutes = require('./routes/authRoutes');
 const vehicleRoutes = require('./routes/vehicleRoutes');
 const driverRoutes = require('./routes/driverRoutes');
 const fuelTransactionRoutes = require('./routes/fuelTransactionRoutes');
+const imageRoutes = require('./routes/imageRoutes');
 
 const app = express();
 
@@ -60,6 +61,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/vehicles', vehicleRoutes);
 app.use('/api/drivers', driverRoutes);
 app.use('/api/fuel-transactions', fuelTransactionRoutes);
+app.use('/api/images', imageRoutes);
 
 // --- FRONTEND STATIC SERVING (Keep this at the bottom) ---
 const frontendDistPath = path.join(__dirname, '../../frontend/dist');
