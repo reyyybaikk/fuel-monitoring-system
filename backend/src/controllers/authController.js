@@ -177,6 +177,14 @@ const login = async (req, res, next) => {
     }
 
     const token = generateToken(user);
+    // Set auth token as HttpOnly cookie for middleware
+    res.cookie('auth_token', token, {
+      httpOnly: true,
+      sameSite: 'none',
+      secure: true,
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+    });
+    // Send token in response body as before
     res.status(200).json({
       success: true,
       message: 'Login berhasil',

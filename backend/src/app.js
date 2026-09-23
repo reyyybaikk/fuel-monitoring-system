@@ -21,7 +21,8 @@ app.use(cors({
   origin: process.env.CORS_ORIGIN?.split(',') || ['https://fuel-monitoring-bbm-frontend-gamma.vercel.app'],
   credentials: true,
 }));
-app.use(express.json());
+const cookieParser = require('cookie-parser');
+app.use(cookieParser());
 app.use(requestLogger);
 
 // Static Files for Uploads
