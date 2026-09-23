@@ -120,7 +120,7 @@ class FuelTransactionService {
       throw error;
     }
 
-    if (user.role === 'DRIVER' && photoRecord.driver_id !== user.id) {
+    if (user && user.role === 'DRIVER' && photoRecord.driver_id !== user.id) {
       const error = new Error('Forbidden: Anda tidak memiliki hak akses melihat foto transaksi ini');
       error.statusCode = 403;
       throw error;

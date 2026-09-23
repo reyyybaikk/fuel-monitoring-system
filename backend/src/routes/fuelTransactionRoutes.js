@@ -4,7 +4,10 @@ const fuelTransactionController = require('../controllers/fuelTransactionControl
 const uploadTransactionPhotos = require('../middleware/uploadMiddleware');
 const { authenticate, authorize } = require('../middleware/authMiddleware');
 
-// Semua endpoint wajib terautentikasi JWT
+// STREAM FOTO (Publik/Redirect ke Supabase Storage)
+router.get('/:id/photo/:type', fuelTransactionController.getPhoto);
+
+// Semua endpoint operasional lainnya wajib terautentikasi JWT
 router.use(authenticate);
 
 // 1. ANALYTICS & SUMMARY (Khusus ADMIN/MANAGER - Ported from legacy)
@@ -27,8 +30,7 @@ router.get('/history', fuelTransactionController.getAll);
 // 4. DETAIL TRANSAKSI
 router.get('/:id', fuelTransactionController.getById);
 
-// 5. STREAM FOTO
-router.get('/:id/photo/:type', fuelTransactionController.getPhoto);
+
 
 // 6. ADMIN/MANAGER: Verifikasi Status
 router.patch('/:id/status', authorize('ADMIN_PUSAT', 'ADMIN', 'MANAGER'), fuelTransactionController.updateStatus);
