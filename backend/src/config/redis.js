@@ -1,10 +1,10 @@
 // src/config/redis.js
-const { createClient } = require('redis');   // npm i redis@4 (versi modern)
+const { createClient } = require('redis'); // npm i redis@4 (versi modern)
 
 let redisUrl = process.env.REDIS_URL;
 if (!redisUrl) {
-  console.error('[Redis] REDIS_URL environment variable is not set. Exiting.');
-  process.exit(1);
+  console.warn('[Redis] REDIS_URL not set – falling back to redis://localhost:6379');
+  redisUrl = 'redis://localhost:6379';
 }
 // If URL uses plain redis://, upgrade to rediss:// for TLS (Upstash requires TLS)
 if (redisUrl.startsWith('redis://')) {

@@ -140,12 +140,12 @@ const register = async (req, res, next) => {
 // Controller untuk Login User
 const login = async (req, res, next) => {
   try {
-    const identifier = req.body.email || req.body.username || req.body.nik;
+    const identifier = req.body.email || req.body.username || req.body.nik || req.body.whatsapp_number;
     const { password } = req.body;
     let error;
 
     if (!identifier || !password) {
-      error = new Error('Username/Email dan password wajib diisi');
+      error = new Error('Email/Username/Nomor WhatsApp dan password wajib diisi');
       error.statusCode = 400;
       throw error;
     }
@@ -154,11 +154,19 @@ const login = async (req, res, next) => {
     if (identifier.includes('@')) {
       user = await userRepository.findByEmail(identifier);
     } else {
+      // Try finding by username first, then by WhatsApp number
       user = await userRepository.findByUsername(identifier);
+      if (!user) {
+        const cleanWhatsapp = identifier.replace(/[^0-9]/g, '');
+        user = await userRepository.findByWhatsapp(cleanWhatsapp);
+        if (!user && cleanWhatsapp !== identifier) {
+          user = await userRepository.findByWhatsapp(identifier);
+        }
+      }
     }
 
     if (!user) {
-      error = new Error('Username/Email atau password salah');
+      error = new Error('Email/Username/Nomor WhatsApp atau password salah');
       error.statusCode = 401;
       throw error;
     }
@@ -171,7 +179,7 @@ const login = async (req, res, next) => {
 
     const isPasswordValid = await comparePassword(password, user.password_hash);
     if (!isPasswordValid) {
-      error = new Error('Username/Email atau password salah');
+      error = new Error('Email/Username/Nomor WhatsApp atau password salah');
       error.statusCode = 401;
       throw error;
     }
@@ -195,12 +203,14 @@ const login = async (req, res, next) => {
         email: user.email,
         full_name: user.full_name,
         role: user.role,
+        whatsapp_number: user.whatsapp_number,
         user: {
           id: user.id,
           username: user.username,
           name: user.full_name,
           email: user.email,
           role: user.role,
+          whatsapp_number: user.whatsapp_number,
           region: user.region
         },
         token: token

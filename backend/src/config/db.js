@@ -2,8 +2,20 @@ const { Pool } = require('pg');
 require('dotenv').config();
 
 // Membuat pool koneksi menggunakan variabel dari .env
+// Render menyediakan DATABASE_URL. Untuk pengembangan lokal, gunakan .env atau fallback.
 const { URL } = require('url');
-const dbUrl = new URL(process.env.DATABASE_URL);
+let dbUrl;
+if (process.env.DATABASE_URL) {
+  try {
+    dbUrl = new URL(process.env.DATABASE_URL);
+  } catch (e) {
+    console.error('❌ DATABASE_URL tidak valid:', e.message);
+    process.exit(1);
+  }
+} else {
+  console.warn('⚠️ DATABASE_URL tidak ditemukan – menggunakan fallback PostgreSQL lokal.');
+  dbUrl = new URL('postgres://postgres:postgres@localhost:5432/fuel_monitoring');
+}
 const pool = new Pool({
   host: dbUrl.hostname,
   port: dbUrl.port,

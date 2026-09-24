@@ -15,6 +15,13 @@ class UserRepository {
     return result.rows[0];
   }
 
+  // Mencari user berdasarkan nomor WhatsApp
+  async findByWhatsapp(whatsappNumber) {
+    const query = 'SELECT id, username, email, password_hash, full_name, whatsapp_number, role, is_active, region, created_at FROM users WHERE whatsapp_number = $1';
+    const result = await db.query(query, [whatsappNumber]);
+    return result.rows[0];
+  }
+
   // Mencari user berdasarkan ID
   async findById(id) {
     const query = 'SELECT id, username, email, full_name, whatsapp_number, role, is_active, region, created_at FROM users WHERE id = $1';
