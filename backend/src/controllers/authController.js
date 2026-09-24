@@ -188,12 +188,12 @@ const login = async (req, res, next) => {
       if (!user) {
         const cleanWhatsapp = identifier.replace(/[^0-9]/g, '');
         user = await userRepository.findByWhatsapp(cleanWhatsapp);
-        console.log('[FOUND BY WHATSAPP]:', user ? user.id : 'null', 'clean:', cleanWhatsapp, 'password_hash_prefix:', user ? user.password_hash.substring(0, 10) : 'N/A');
+        logger.info('[FOUND BY WHATSAPP]: %s clean:%s hashPrefix:%s', user ? user.id : 'null', cleanWhatsapp, user ? user.password_hash.substring(0,10) : 'N/A');
       }
     }
 
     if (!user) {
-      console.log('[LOGIN ERROR]: User not found for identifier:', identifier);
+      logger.warn('[LOGIN ERROR] User not found for identifier: %s', identifier);
       error = new Error('Email/Username/Nomor WhatsApp atau password salah');
       error.statusCode = 401;
       throw error;

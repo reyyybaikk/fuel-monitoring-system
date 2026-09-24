@@ -22,6 +22,21 @@ const app = express();
 // Global Middleware
 app.use(helmet());
 
+// CORS configuration – allow frontend origins and send credentials
+const allowedOrigins = [
+  'https://frontend-upkal2.com',
+  'http://localhost:3000' // development
+];
+app.use(cors({
+  origin: (origin, callback) => {
+    // Allow non‑browser requests (e.g., Postman) or same‑origin
+    if (!origin) return callback(null, true);
+    if (allowedOrigins.includes(origin)) return callback(null, true);
+    return callback(new Error('Not allowed by CORS'));
+  },
+  credentials: true
+}));
+
 // Global rate limiter: 100 requests per 15 minutes per IP
 const apiLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
@@ -31,6 +46,7 @@ const apiLimiter = rateLimit({
   legacyHeaders: false,
 });
 app.use('/api/', apiLimiter);
+
 const cookieParser = require('cookie-parser');
 app.use(cookieParser());
 app.use(express.json());
