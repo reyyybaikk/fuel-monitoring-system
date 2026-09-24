@@ -15,10 +15,23 @@ class UserRepository {
     return result.rows[0];
   }
 
-  // Mencari user berdasarkan nomor WhatsApp
+  // Mencari user berdasarkan nomor WhatsApp (mendukung berbagai variasi format: 08..., 628..., 8...)
   async findByWhatsapp(whatsappNumber) {
-    const query = 'SELECT id, username, email, password_hash, full_name, whatsapp_number, role, is_active, region, created_at FROM users WHERE whatsapp_number = $1';
-    const result = await db.query(query, [whatsappNumber]);
+    const clean = String(whatsappNumber).replace(/[^0-9]/g, '');
+    let v62 = clean;
+    if (v62.startsWith('0')) {
+      v62 = '62' + v62.substring(1);
+    } else if (!v62.startsWith('62')) {
+      v62 = '62' + v62;
+    }
+
+    let v0 = clean;
+    if (v0.startsWith('62')) {
+      v0 = '0' + v0.substring(2);
+    }
+
+    const query = 'SELECT id, username, email, password_hash, full_name, whatsapp_number, role, is_active, region, created_at FROM users WHERE whatsapp_number = $1 OR whatsapp_number = $2 OR whatsapp_number = $3';
+    const result = await db.query(query, [clean, v62, v0]);
     return result.rows[0];
   }
 
