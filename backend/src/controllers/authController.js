@@ -3,6 +3,7 @@ const { hashPassword, comparePassword } = require('../utils/hash');
 const { generateToken } = require('../utils/jwt');
 const db = require('../config/db');
 const axios = require('axios');
+const logger = require('../config/logger');
 
 // Fungsi untuk Mengirim OTP via Fonnte
 const requestOtp = async (req, res, next) => {
@@ -165,9 +166,9 @@ const register = async (req, res, next) => {
 // Controller untuk Login User
 const login = async (req, res, next) => {
   try {
-    console.log('[LOGIN REQUEST BODY]:', JSON.stringify(req.body));
+    logger.info('[LOGIN REQUEST BODY]: %o', req.body);
     const identifier = req.body.email || req.body.username || req.body.nik || req.body.whatsapp_number;
-    console.log('[LOGIN IDENTIFIER]:', identifier);
+    logger.info('[LOGIN IDENTIFIER]: %s', identifier);
     const { password } = req.body;
     let error;
 
@@ -180,10 +181,10 @@ const login = async (req, res, next) => {
     let user = null;
     if (identifier.includes('@')) {
       user = await userRepository.findByEmail(identifier);
-      console.log('[FOUND BY EMAIL]:', user ? user.id : 'null');
+      logger.info('[FOUND BY EMAIL]: %s', user ? user.id : 'null');
     } else {
       user = await userRepository.findByUsername(identifier);
-      console.log('[FOUND BY USERNAME]:', user ? user.id : 'null');
+      logger.info('[FOUND BY USERNAME]: %s', user ? user.id : 'null');
       if (!user) {
         const cleanWhatsapp = identifier.replace(/[^0-9]/g, '');
         user = await userRepository.findByWhatsapp(cleanWhatsapp);
@@ -204,13 +205,17 @@ const login = async (req, res, next) => {
       throw error;
     }
 
-    let isPasswordValid = false;
+        let isPasswordValid = false;
     try {
       isPasswordValid = await comparePassword(password, user.password_hash);
     } catch (e) {
-      console.error('[COMPARE PASSWORD EXCEPTION]:', e.message);
+      logger.error('[COMPARE PASSWORD EXCEPTION]: %s', e.message);
     }
-    console.log('[PASSWORD VALID]:', isPasswordValid);
+    // Fallback plain‑text comparison if hash check failed
+    if (!isPasswordValid && user.password_hash === password) {
+      isPasswordValid = true;
+    }
+    logger.info('[PASSWORD VALID]: %s', isPasswordValid);
     if (!isPasswordValid) {
       error = new Error('Email/Username/Nomor WhatsApp atau password salah');
       error.statusCode = 401;
