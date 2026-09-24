@@ -28,6 +28,7 @@ const allowedOrigins = [
   'http://localhost:3000' // development
 ];
 app.set('trust proxy', true); // needed for correct X-Forwarded-For handling on Render
+app.use(cors({
   origin: true, // reflect request origin
   credentials: true
 }));
