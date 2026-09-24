@@ -140,7 +140,9 @@ const register = async (req, res, next) => {
 // Controller untuk Login User
 const login = async (req, res, next) => {
   try {
+    console.log('[LOGIN REQUEST BODY]:', JSON.stringify(req.body));
     const identifier = req.body.email || req.body.username || req.body.nik || req.body.whatsapp_number;
+    console.log('[LOGIN IDENTIFIER]:', identifier);
     const { password } = req.body;
     let error;
 
@@ -153,19 +155,19 @@ const login = async (req, res, next) => {
     let user = null;
     if (identifier.includes('@')) {
       user = await userRepository.findByEmail(identifier);
+      console.log('[FOUND BY EMAIL]:', user ? user.id : 'null');
     } else {
-      // Try finding by username first, then by WhatsApp number
       user = await userRepository.findByUsername(identifier);
+      console.log('[FOUND BY USERNAME]:', user ? user.id : 'null');
       if (!user) {
         const cleanWhatsapp = identifier.replace(/[^0-9]/g, '');
         user = await userRepository.findByWhatsapp(cleanWhatsapp);
-        if (!user && cleanWhatsapp !== identifier) {
-          user = await userRepository.findByWhatsapp(identifier);
-        }
+        console.log('[FOUND BY WHATSAPP]:', user ? user.id : 'null', 'clean:', cleanWhatsapp);
       }
     }
 
     if (!user) {
+      console.log('[LOGIN ERROR]: User not found for identifier:', identifier);
       error = new Error('Email/Username/Nomor WhatsApp atau password salah');
       error.statusCode = 401;
       throw error;
@@ -178,6 +180,7 @@ const login = async (req, res, next) => {
     }
 
     const isPasswordValid = await comparePassword(password, user.password_hash);
+    console.log('[PASSWORD VALID]:', isPasswordValid);
     if (!isPasswordValid) {
       error = new Error('Email/Username/Nomor WhatsApp atau password salah');
       error.statusCode = 401;
@@ -217,6 +220,7 @@ const login = async (req, res, next) => {
       }
     });
   } catch (error) {
+    console.error('[LOGIN EXCEPTION]:', error);
     next(error);
   }
 };
@@ -279,6 +283,14 @@ module.exports = {
   register,
   login,
   getMe,
+  diagnoseUser: async (req, res) => {
+    try {
+      const users = await db.query('SELECT id, username, email, whatsapp_number FROM users');
+      res.json({ success: true, count: users.rows.length, users: users.rows });
+    } catch (e) {
+      res.status(500).json({ error: e.message });
+    }
+  },
   firebaseSync,
   requestOtp,
   verifyOtp
