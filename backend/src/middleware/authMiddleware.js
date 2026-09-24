@@ -1,5 +1,5 @@
 const logger = require('../config/logger');
-
+const { verifyToken } = require('../utils/jwt'); // added import
 // ... existing code above
 // Replace console.log and console.error usages within the file
 // Example replacements will be applied below in subsequent edits.
@@ -16,24 +16,20 @@ const authenticate = async (req, res, next) => {
   try {
     const authHeader = req.headers.authorization;
 
-    // 1. Check if Authorization header exists
-    // 1. Check Authorization header
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      const err = new Error('Unauthorized: Header Authorization tidak ditemukan');
+    // 1. Extract token: prefer Authorization header, fallback to auth_token cookie
+    let token;
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      token = authHeader.split(' ')[1];
+      logger.info('[AUTH_DEBUG] Token diambil dari header Authorization');
+    } else if (req.cookies && req.cookies.auth_token) {
+      token = req.cookies.auth_token;
+      logger.info('[AUTH_DEBUG] Token diambil dari cookie auth_token');
+    } else {
+      const err = new Error('Unauthorized: Tidak ada token di header maupun cookie');
       err.statusCode = 401;
-      logger.info(`[AUTH_DEBUG] Header tidak ditemukan atau bukan Bearer. Headers:`, Object.keys(req.headers));
+      logger.info('[AUTH_DEBUG] Header tidak ditemukan atau bukan Bearer, dan tidak ada token cookie');
       return next(err);
     }
-
-    // Extract token: prefer Authorization header, fallback to auth_token cookie
-  let token;
-  if (authHeader && authHeader.startsWith('Bearer ')) {
-    token = authHeader.split(' ')[1];
-    logger.info('[AUTH_DEBUG] Token diambil dari header Authorization');
-  } else if (req.cookies && req.cookies.auth_token) {
-    token = req.cookies.auth_token;
-    logger.info('[AUTH_DEBUG] Token diambil dari cookie auth_token');
-  }
 
     // 2. Check token existence / validity
     if (!token || token === 'null' || token === 'undefined') {
