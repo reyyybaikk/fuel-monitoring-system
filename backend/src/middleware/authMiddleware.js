@@ -25,7 +25,15 @@ const authenticate = async (req, res, next) => {
       return next(err);
     }
 
-    const token = authHeader.split(' ')[1];
+    // Extract token: prefer Authorization header, fallback to auth_token cookie
+  let token;
+  if (authHeader && authHeader.startsWith('Bearer ')) {
+    token = authHeader.split(' ')[1];
+    logger.info('[AUTH_DEBUG] Token diambil dari header Authorization');
+  } else if (req.cookies && req.cookies.auth_token) {
+    token = req.cookies.auth_token;
+    logger.info('[AUTH_DEBUG] Token diambil dari cookie auth_token');
+  }
 
     // 2. Check token existence / validity
     if (!token || token === 'null' || token === 'undefined') {

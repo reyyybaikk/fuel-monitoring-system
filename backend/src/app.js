@@ -27,7 +27,7 @@ const allowedOrigins = [
   'https://frontend-upkal2.com',
   'http://localhost:3000' // development
 ];
-app.use(cors({
+app.set('trust proxy', true); // needed for correct X-Forwarded-For handling on Render
   origin: true, // reflect request origin
   credentials: true
 }));
