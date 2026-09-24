@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { register, login, getMe, firebaseSync, requestOtp, verifyOtp } = require('../controllers/authController');
+const { register, login, getMe, firebaseSync, requestOtp, verifyOtp, resolveWhatsapp } = require('../controllers/authController');
 const { authenticate, authorize } = require('../middleware/authMiddleware');
 
 // Endpoint Publik
@@ -8,6 +8,7 @@ router.post('/register', register);
 router.post('/login', login);
 router.post('/request-otp', requestOtp);
 router.post('/verify-otp', verifyOtp);
+router.post('/resolve-whatsapp', resolveWhatsapp);
 
 // Endpoint Khusus Sinkronisasi dari Mobile Firebase Auth
 router.post('/firebase-sync', authenticate, firebaseSync);

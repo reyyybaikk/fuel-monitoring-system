@@ -76,6 +76,31 @@ const verifyOtp = async (req, res, next) => {
   }
 };
 
+// Endpoint untuk Resolver WhatsApp ke Email (untuk Firebase Auth login di Mobile App)
+const resolveWhatsapp = async (req, res, next) => {
+  try {
+    const { whatsapp_number } = req.body;
+    if (!whatsapp_number) {
+      const error = new Error('Nomor WhatsApp wajib diisi');
+      error.statusCode = 400;
+      throw error;
+    }
+    const cleanWhatsapp = whatsapp_number.replace(/[^0-9]/g, '');
+    const user = await userRepository.findByWhatsapp(cleanWhatsapp);
+    if (!user) {
+      const error = new Error('Nomor WhatsApp tidak terdaftar');
+      error.statusCode = 404;
+      throw error;
+    }
+    res.status(200).json({
+      success: true,
+      email: user.email
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 // Controller untuk Registrasi User
 const register = async (req, res, next) => {
   try {
@@ -286,6 +311,7 @@ module.exports = {
   register,
   login,
   getMe,
+  resolveWhatsapp,
   diagnoseUser: async (req, res) => {
     try {
       const users = await db.query('SELECT id, username, email, whatsapp_number FROM users');
