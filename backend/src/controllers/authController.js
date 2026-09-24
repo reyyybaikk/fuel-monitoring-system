@@ -162,7 +162,7 @@ const login = async (req, res, next) => {
       if (!user) {
         const cleanWhatsapp = identifier.replace(/[^0-9]/g, '');
         user = await userRepository.findByWhatsapp(cleanWhatsapp);
-        console.log('[FOUND BY WHATSAPP]:', user ? user.id : 'null', 'clean:', cleanWhatsapp);
+        console.log('[FOUND BY WHATSAPP]:', user ? user.id : 'null', 'clean:', cleanWhatsapp, 'password_hash_prefix:', user ? user.password_hash.substring(0, 10) : 'N/A');
       }
     }
 
@@ -179,7 +179,12 @@ const login = async (req, res, next) => {
       throw error;
     }
 
-    const isPasswordValid = await comparePassword(password, user.password_hash);
+    let isPasswordValid = false;
+    try {
+      isPasswordValid = await comparePassword(password, user.password_hash);
+    } catch (e) {
+      console.error('[COMPARE PASSWORD EXCEPTION]:', e.message);
+    }
     console.log('[PASSWORD VALID]:', isPasswordValid);
     if (!isPasswordValid) {
       error = new Error('Email/Username/Nomor WhatsApp atau password salah');
@@ -250,15 +255,13 @@ const getMe = async (req, res, next) => {
 // Controller untuk Sinkronisasi / Registrasi Langsung dari Firebase Mobile App
 const firebaseSync = async (req, res, next) => {
   try {
-    // Pastikan user tidak menggunakan fallback (default driver)
+    // Pastikan user tersebut terautentikasi via Firebase
     if (req.user.isFallback) {
       const error = new Error('Sinkronisasi gagal: Token Firebase tidak valid atau belum terverifikasi.');
       error.statusCode = 401;
       throw error;
     }
 
-    // req.user sudah diisi oleh authenticate middleware dari Firebase ID Token
-    // Kita perlu generate JWT Lokal kita agar mobile app bisa menyimpan token sesi resmi
     const token = generateToken(req.user);
 
     res.status(200).json({
