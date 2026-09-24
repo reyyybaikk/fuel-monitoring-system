@@ -3,6 +3,8 @@ const cors = require('cors');
 const path = require('path');
 
 // Single declarations for configuration & middleware
+const helmet = require('helmet');
+const rateLimit = require('express-rate-limit');
 const db = require('./config/db');
 const redisClient = require('./config/redis');
 const requestLogger = require('./middleware/logger');

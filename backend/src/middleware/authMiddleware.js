@@ -17,41 +17,40 @@ const authenticate = async (req, res, next) => {
     const authHeader = req.headers.authorization;
 
     // 1. Check if Authorization header exists
+    // 1. Check Authorization header
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
-  const err = new Error('Unauthorized: Header Authorization tidak ditemukan');
-  err.statusCode = 401;
-  return next(err);
-}
+      const err = new Error('Unauthorized: Header Authorization tidak ditemukan');
+      err.statusCode = 401;
       logger.info(`[AUTH_DEBUG] Header tidak ditemukan atau bukan Bearer. Headers:`, Object.keys(req.headers));
-      return useFallback(req, next, 'Header Authorization tidak ditemukan');
+      return next(err);
     }
 
     const token = authHeader.split(' ')[1];
 
+    // 2. Check token existence / validity
     if (!token || token === 'null' || token === 'undefined') {
-  const err = new Error('Unauthorized: Token kosong atau tidak valid');
-  err.statusCode = 401;
-  return next(err);
-}
-      return useFallback(req, next, 'Token kosong atau string tidak valid');
+      const err = new Error('Unauthorized: Token kosong atau tidak valid');
+      err.statusCode = 401;
+      logger.info('[AUTH_DEBUG] Token kosong atau tidak valid');
+      return next(err);
     }
 
-    console.log(`[AUTH_DEBUG] Memverifikasi token (Awal: ${token.substring(0, 10)}...)`);
+    logger.info(`[AUTH_DEBUG] Memverifikasi token (Awal: ${token.substring(0, 10)}...)`);
 
     // --- STRATEGY 1: Local JWT ---
     try {
       if (!process.env.JWT_SECRET) {
-        console.error('[AUTH_ERROR] JWT_SECRET tidak terdefinisi di Environment Variable!');
+        logger.error('[AUTH_ERROR] JWT_SECRET tidak terdefinisi di Environment Variable!');
       }
 
       const localDecoded = verifyToken(token);
       if (localDecoded) {
-        console.log(`[AUTH_DEBUG] Berhasil lewat Strategy 1 (Local JWT) - User ID: ${localDecoded.id}`);
+        logger.info(`[AUTH_DEBUG] Berhasil lewat Strategy 1 (Local JWT) - User ID: ${localDecoded.id}`);
         req.user = localDecoded;
         return next();
       }
     } catch (err) {
-      console.error('[AUTH_DEBUG] Strategy 1 (Local JWT) failed:', err.message);
+      logger.error('[AUTH_DEBUG] Strategy 1 (Local JWT) failed:', err.message);
     }
 
     // --- STRATEGY 2: Supabase JWT ---
@@ -79,7 +78,7 @@ const authenticate = async (req, res, next) => {
         const decoded = jwt.decode(token, { complete: true });
 
         if (decoded && decoded.header && decoded.header.kid) {
-          console.log('[AUTH_DEBUG] Mendeteksi Firebase ID Token (terdapat header kid)');
+          logger.info('[AUTH_DEBUG] Mendeteksi Firebase ID Token (terdapat header kid)');
           const firebaseDecoded = await verifyFirebaseToken(token);
           if (firebaseDecoded && firebaseDecoded.email) {
             console.log(`[AUTH_DEBUG] Berhasil lewat Strategy 3 (Firebase) - Email: ${firebaseDecoded.email}`);
@@ -97,7 +96,7 @@ const authenticate = async (req, res, next) => {
                   whatsappNumber: whatsappNumber
                 });
               } else {
-                console.warn(`[AUTH_DEBUG] User Google tidak terdaftar: ${firebaseDecoded.email}`);
+                logger.warn(`[AUTH_DEBUG] User Google tidak terdaftar: ${firebaseDecoded.email}`);
                 return useFallback(req, next, 'Akun Google ini belum terdaftar di sistem. Silakan registrasi terlebih dahulu.');
               }
             }
