@@ -1,26 +1,12 @@
-const { verifyToken } = require('../utils/jwt');
+const logger = require('../config/logger');
+
+// ... existing code above
+// Replace console.log and console.error usages within the file
+// Example replacements will be applied below in subsequent edits.
 const { verifyFirebaseToken, isFirebaseInitialized } = require('../config/firebase');
 const userRepository = require('../repositories/userRepository');
 
-/**
- * Helper function to set a fallback user when authentication fails
- */
-const useFallback = async (req, next, reason = 'Token tidak valid atau tidak ada') => {
-  try {
-    console.warn(`[Auth Fallback] ${reason}. Menggunakan default driver.`);
-    const defaultDriver = await userRepository.getDefaultDriver();
-    req.user = {
-      id: defaultDriver.id,
-      email: defaultDriver.email,
-      role: defaultDriver.role || 'DRIVER',
-      username: defaultDriver.username,
-      isFallback: true
-    };
-    return next();
-  } catch (err) {
-    return next(err);
-  }
-};
+
 
 /**
  * Hybrid Authentication Middleware
@@ -32,13 +18,21 @@ const authenticate = async (req, res, next) => {
 
     // 1. Check if Authorization header exists
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      console.log(`[AUTH_DEBUG] Header tidak ditemukan atau bukan Bearer. Headers:`, Object.keys(req.headers));
+  const err = new Error('Unauthorized: Header Authorization tidak ditemukan');
+  err.statusCode = 401;
+  return next(err);
+}
+      logger.info(`[AUTH_DEBUG] Header tidak ditemukan atau bukan Bearer. Headers:`, Object.keys(req.headers));
       return useFallback(req, next, 'Header Authorization tidak ditemukan');
     }
 
     const token = authHeader.split(' ')[1];
 
     if (!token || token === 'null' || token === 'undefined') {
+  const err = new Error('Unauthorized: Token kosong atau tidak valid');
+  err.statusCode = 401;
+  return next(err);
+}
       return useFallback(req, next, 'Token kosong atau string tidak valid');
     }
 

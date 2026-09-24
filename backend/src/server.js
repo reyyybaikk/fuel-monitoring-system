@@ -1,5 +1,11 @@
 require('dotenv').config();
 const app = require('./app');
+
+// Ensure critical environment variables are set
+if (!process.env.JWT_SECRET) {
+  console.error('❌ JWT_SECRET is not defined. Exiting.');
+  process.exit(1);
+}
 const db = require('./config/db'); 
 
 const PORT = process.env.PORT || 3000;
