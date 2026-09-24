@@ -4,7 +4,21 @@ const { register, login, getMe, firebaseSync, requestOtp, verifyOtp, resolveWhat
 const { authenticate, authorize } = require('../middleware/authMiddleware');
 
 // Endpoint Publik
-router.post('/register', register);
+const { loginSchema, registerSchema } = require('../validators/authValidator');
+
+// Generic validator middleware
+const validate = schema => (req, res, next) => {
+  const { error } = schema.validate(req.body);
+  if (error) {
+    const err = new Error(error.details[0].message);
+    err.statusCode = 400;
+    return next(err);
+  }
+  next();
+};
+
+router.post('/register', validate(registerSchema), register);
+router.post('/login',    validate(loginSchema),    login);
 router.post('/login', login);
 router.post('/request-otp', requestOtp);
 router.post('/verify-otp', verifyOtp);

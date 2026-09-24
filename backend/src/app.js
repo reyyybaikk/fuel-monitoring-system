@@ -20,10 +20,17 @@ const imageRoutes = require('./routes/imageRoutes');
 const app = express();
 
 // Global Middleware
-app.use(cors({
-  origin: process.env.CORS_ORIGIN?.split(',') || ['https://fuel-monitoring-bbm-frontend-gamma.vercel.app'],
-  credentials: true,
-}));
+app.use(helmet());
+
+// Global rate limiter: 100 requests per 15 minutes per IP
+const apiLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 100,
+  message: { error: 'Too many requests, please try later.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+app.use('/api/', apiLimiter);
 const cookieParser = require('cookie-parser');
 app.use(cookieParser());
 app.use(express.json());

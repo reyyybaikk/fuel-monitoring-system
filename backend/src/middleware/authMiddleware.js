@@ -97,7 +97,10 @@ const authenticate = async (req, res, next) => {
                 });
               } else {
                 logger.warn(`[AUTH_DEBUG] User Google tidak terdaftar: ${firebaseDecoded.email}`);
-                return useFallback(req, next, 'Akun Google ini belum terdaftar di sistem. Silakan registrasi terlebih dahulu.');
+                logger.warn(`[AUTH_DEBUG] User Google tidak terdaftar: ${firebaseDecoded.email}`);
+const err = new Error('Akun Google ini belum terdaftar di sistem. Silakan registrasi terlebih dahulu.');
+err.statusCode = 401;
+return next(err);
               }
             }
 
@@ -127,7 +130,9 @@ const authenticate = async (req, res, next) => {
     }
 
     // --- FINAL FALLBACK ---
-    return useFallback(req, next, 'Semua metode autentikasi gagal');
+    const err = new Error('Semua metode autentikasi gagal');
+err.statusCode = 401;
+return next(err);
 
   } catch (error) {
     next(error);
