@@ -28,12 +28,7 @@ const allowedOrigins = [
   'http://localhost:3000' // development
 ];
 app.use(cors({
-  origin: (origin, callback) => {
-    // Allow non‑browser requests (e.g., Postman) or same‑origin
-    if (!origin) return callback(null, true);
-    if (allowedOrigins.includes(origin)) return callback(null, true);
-    return callback(new Error('Not allowed by CORS'));
-  },
+  origin: true, // reflect request origin
   credentials: true
 }));
 
