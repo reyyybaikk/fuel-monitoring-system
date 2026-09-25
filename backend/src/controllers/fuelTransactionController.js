@@ -169,6 +169,28 @@ class FuelTransactionController {
       next(error);
     }
   };
+  // 10. ML Feedback Loop
+  submitFeedback = async (req, res, next) => {
+    try {
+      const { id } = req.params;
+      const { isAnomaly, notes } = req.body;
+      
+      if (typeof isAnomaly !== 'boolean') {
+        const error = new Error('isAnomaly must be a boolean');
+        error.statusCode = 400;
+        throw error;
+      }
+
+      const updated = await fuelTransactionService.saveFeedback(id, isAnomaly, notes);
+      res.status(200).json({
+        success: true,
+        message: 'Feedback berhasil disimpan',
+        data: updated,
+      });
+    } catch (error) {
+      next(error);
+    }
+  };
 }
 
 module.exports = new FuelTransactionController();

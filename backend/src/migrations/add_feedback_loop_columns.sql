@@ -1,0 +1,1 @@
+ALTER TABLE fuel_transactions ADD COLUMN admin_feedback_is_anomaly BOOLEAN DEFAULT NULL, ADD COLUMN admin_feedback_notes TEXT DEFAULT NULL;

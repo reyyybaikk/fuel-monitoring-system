@@ -38,4 +38,7 @@ router.patch('/:id/status', authorize('ADMIN_PUSAT', 'ADMIN', 'MANAGER'), fuelTr
 // 7. ADMIN/MANAGER: Koreksi Data
 router.put('/:id', authorize('ADMIN_PUSAT', 'ADMIN', 'MANAGER'), fuelTransactionController.update);
 
+// 8. ADMIN/MANAGER: ML Feedback Loop
+router.post('/:id/feedback', authorize('ADMIN_PUSAT', 'ADMIN', 'MANAGER'), fuelTransactionController.submitFeedback);
+
 module.exports = router;

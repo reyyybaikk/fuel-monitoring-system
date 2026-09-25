@@ -294,6 +294,20 @@ class FuelTransactionRepository {
     return result.rows[0];
   }
 
+  async saveFeedback(id, isAnomaly, notes) {
+    const query = `
+      UPDATE fuel_transactions
+      SET admin_feedback_is_anomaly = $1,
+          admin_feedback_notes = COALESCE($2, admin_feedback_notes),
+          updated_at = CURRENT_TIMESTAMP
+      WHERE id = $3
+      RETURNING *;
+    `;
+    const result = await db.query(query, [isAnomaly, notes, id]);
+    return result.rows[0];
+  }
+
+
   async update(id, data) {
     const { fuel_amount, odometer, total_cost, fuel_type, notes, status } = data;
     const query = `

@@ -153,6 +153,22 @@ class FuelTransactionService {
     return await fuelTransactionRepository.updateStatus(id, status);
   }
 
+  async saveFeedback(id, isAnomaly, notes) {
+    const transaction = await fuelTransactionRepository.findById(id);
+    if (!transaction) {
+      const error = new Error('Transaksi BBM tidak ditemukan');
+      error.statusCode = 404;
+      throw error;
+    }
+
+    // Jika admin setuju itu anomali, status transaksi tetap REJECTED atau sesuaikan
+    // Jika admin menganggap False Positive (bukan anomali), ubah status jadi APPROVED
+    const updatedStatus = isAnomaly ? 'REJECTED' : 'APPROVED';
+
+    await fuelTransactionRepository.updateStatus(id, updatedStatus);
+    return await fuelTransactionRepository.saveFeedback(id, isAnomaly, notes);
+  }
+
   async updateTransactionData(id, data) {
     const transaction = await fuelTransactionRepository.findById(id);
     if (!transaction) {
