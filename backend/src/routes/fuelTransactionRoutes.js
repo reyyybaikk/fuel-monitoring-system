@@ -33,12 +33,12 @@ router.get('/:id', fuelTransactionController.getById);
 
 
 // 6. ADMIN/MANAGER: Verifikasi Status
-router.patch('/:id/status', authorize('ADMIN_PUSAT', 'ADMIN', 'MANAGER'), fuelTransactionController.updateStatus);
+router.patch('/:id/status', authorize('ADMIN_PUSAT', 'ADMIN', 'ADMIN_WILAYAH', 'MANAGER'), fuelTransactionController.updateStatus);
 
 // 7. ADMIN/MANAGER: Koreksi Data
-router.put('/:id', authorize('ADMIN_PUSAT', 'ADMIN', 'MANAGER'), fuelTransactionController.update);
+router.put('/:id', authorize('ADMIN_PUSAT', 'ADMIN', 'ADMIN_WILAYAH', 'MANAGER'), fuelTransactionController.update);
 
 // 8. ADMIN/MANAGER: ML Feedback Loop
-router.post('/:id/feedback', authorize('ADMIN_PUSAT', 'ADMIN', 'MANAGER'), fuelTransactionController.submitFeedback);
+router.post('/:id/feedback', authorize('ADMIN_PUSAT', 'ADMIN', 'ADMIN_WILAYAH', 'MANAGER'), fuelTransactionController.submitFeedback);
 
 module.exports = router;
