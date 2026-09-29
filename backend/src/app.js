@@ -20,18 +20,20 @@ const imageRoutes = require('./routes/imageRoutes');
 const app = express();
 
 // Global Middleware
-app.use(helmet({
-  crossOriginResourcePolicy: false,
-  crossOriginOpenerPolicy: false,
-  contentSecurityPolicy: {
-    directives: {
-      ...helmet.contentSecurityPolicy.getDefaultDirectives(),
-      "frame-ancestors": ["'*'"],
-      "img-src": ["'self'", "data:", "https:"],
+app.use(
+  helmet({
+    crossOriginResourcePolicy: false,
+    crossOriginOpenerPolicy: false,
+    contentSecurityPolicy: {
+      directives: {
+        ...helmet.contentSecurityPolicy.getDefaultDirectives(),
+        "frame-ancestors": ["'*'"],   // allow any origin
+        "img-src": ["'self'", "data:", "https:"],
+      },
     },
-  },
-  frameguard: false
-}));
+    frameguard: false,                 // disable SAMEORIGIN
+  })
+);
 
 // CORS configuration – allow frontend origins and send credentials
 const allowedOrigins = [
