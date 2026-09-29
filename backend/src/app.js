@@ -20,7 +20,18 @@ const imageRoutes = require('./routes/imageRoutes');
 const app = express();
 
 // Global Middleware
-app.use(helmet());
+app.use(helmet({
+  crossOriginResourcePolicy: false,
+  crossOriginOpenerPolicy: false,
+  contentSecurityPolicy: {
+    directives: {
+      ...helmet.contentSecurityPolicy.getDefaultDirectives(),
+      "frame-ancestors": ["'*'"],
+      "img-src": ["'self'", "data:", "https:"],
+    },
+  },
+  frameguard: false
+}));
 
 // CORS configuration – allow frontend origins and send credentials
 const allowedOrigins = [
