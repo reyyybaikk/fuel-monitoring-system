@@ -27,7 +27,10 @@ app.use(
     contentSecurityPolicy: {
       directives: {
         ...helmet.contentSecurityPolicy.getDefaultDirectives(),
-        "frame-ancestors": ["'*'"],   // allow any origin
+        // Allow the frontend Vercel domain to embed this page
+        "frame-ancestors": ["'self'", "https://fuel-monitoring-bbm-frontend-gamma.vercel.app"],
+        // Allow the iframe content to be sourced from the same origin and the frontend domain
+        "frame-src": ["'self'", "https://fuel-monitoring-bbm-frontend-gamma.vercel.app"],
         "img-src": ["'self'", "data:", "https:"],
       },
     },
