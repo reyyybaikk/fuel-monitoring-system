@@ -58,7 +58,7 @@ class FuelTransactionService {
     const newTransaction = await fuelTransactionRepository.create(payload);
 
     try {
-      await redisClient.lPush('fuel_queue', JSON.stringify({ transactionId: newTransaction.id }));
+      await require('../utils/redisThrottle')(redisClient.lPush.bind(redisClient), 'fuel_queue', JSON.stringify({ transactionId: newTransaction.id }));
       console.log(`[Queue] Job ID ${newTransaction.id} masuk ke 'fuel_queue'.`);
     } catch (error) {
       console.error(`[Queue Error] Gagal memasukkan transaksi ${newTransaction.id} ke antrean:`, error.message);
@@ -185,7 +185,7 @@ class FuelTransactionService {
 
     // PUSH ke antrean ML-Engine untuk verifikasi ulang data yang sudah dikoreksi
     try {
-      await redisClient.lPush('fuel_queue', JSON.stringify({ transactionId: id }));
+      await require('../utils/redisThrottle')(redisClient.lPush.bind(redisClient), 'fuel_queue', JSON.stringify({ transactionId: id }));
       console.log(`[Queue] Re-verifikasi Job ID ${id} (Koreksi Admin) masuk ke 'fuel_queue'.`);
     } catch (error) {
       console.error(`[Queue Error] Gagal memasukkan koreksi transaksi ${id} ke antrean:`, error.message);
