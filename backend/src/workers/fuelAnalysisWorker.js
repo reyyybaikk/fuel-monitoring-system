@@ -51,7 +51,7 @@ console.log(`[Worker] ✅ Job ${job.id} selesai. PostgreSQL berhasil diupdate (a
         `SELECT rc.admin_whatsapp
          FROM fuel_transactions ft
          JOIN vehicles v ON ft.vehicle_id = v.id
-         JOIN region_contacts rc ON LOWER(rc.ul_nd) = LOWER(v.ul_nd) OR LOWER(rc.ul_pln) = LOWER(v.ul_nd)
+         JOIN region_contacts rc ON LOWER(rc.ul_nd) = LOWER(v.ul_nd)
          WHERE ft.id = $1
          LIMIT 1`,
         [job.data.transactionId]
