@@ -42,14 +42,23 @@ const noteMsg = anomaly ? 'Anomali terdeteksi (ML)' : 'Tidak ada anomali (ML)';
 await db.query(updateQuery, [noteMsg, anomaly, job.data.transactionId]);
 console.log(`[Worker] ✅ Job ${job.id} selesai. PostgreSQL berhasil diupdate (anomaly=${anomaly}).`);
   // Kirim notifikasi WhatsApp bila anomali terdeteksi
-  if (anomaly) {
+  // Retrieve admin WhatsApp number from region_contracts (fallback to env var)
+    let adminNumber = null;
     try {
-      await sendAnomalyAlert(job.data.transactionId, job.data.amount, job.data.fuelType, anomaly);
-      console.log('[Worker] 📱 Notifikasi WhatsApp terkirim.');
-    } catch (notifyErr) {
-      console.error('[Worker] ❌ Gagal mengirim notifikasi WhatsApp:', notifyErr.message);
+      const adminRes = await db.query(
+        `SELECT rc.admin_whatsapp
+         FROM region_contracts rc
+         JOIN fuel_transactions ft ON rc.id = ft.region_contract_id
+         WHERE ft.id = $1`,
+        [job.data.transactionId]
+      );
+      if (adminRes.rowCount > 0) adminNumber = adminRes.rows[0].admin_whatsapp;
+    } catch (e) {
+      console.error('[Worker] Failed to fetch admin WhatsApp:', e.message);
     }
-  }
+    // Send WhatsApp alert (use adminNumber if available)
+    await sendAnomalyAlert(job.data.transactionId, job.data.amount, job.data.fuelType, anomaly, adminNumber);
+
 
   return { success: true, transactionId: job.data.transactionId, anomaly };
 

@@ -16,7 +16,27 @@ const { WHACENTER_TARGET_NUMBER } = process.env;
  * @param {string} fuelType      Tipe bahan bakar (mis. Solar, Premium)
  * @param {boolean} isAnomaly    Flag apakah anomali terdeteksi
  */
-async function sendAnomalyAlert(transactionId, amount, fuelType, isAnomaly) {
+// Sends an anomaly alert to a specific WhatsApp number (fallback to env var)
+async function sendAnomalyAlert(transactionId, amount, fuelType, isAnomaly, targetNumber) {
+  // Use the provided targetNumber; if missing, fall back to env var
+  const number = targetNumber || WHACENTER_TARGET_NUMBER;
+  if (!number) {
+    console.warn('[WhatsApp] No target number provided – notification skipped');
+    return;
+  }
+
+  const status = isAnomaly ? '🚨 *ANOMALI TERDETEKSI*' : '✅ *Tidak ada anomali*';
+  const message = `${status}\nTransaction ID: ${transactionId}\nAmount: ${amount}\nFuel Type: ${fuelType}`;
+
+  try {
+    await sendWhacenterMessage(number, message);
+    console.log('[WhatsApp] Notifikasi terkirim ke', number);
+  } catch (err) {
+    console.error('[WhatsApp] Gagal mengirim notifikasi:', err.message);
+    // Do not re‑throw so the job does not fail because of notification
+  }
+}
+
   if (!WHACENTER_TARGET_NUMBER) {
     console.warn('[WhatsApp] WHACENTER_TARGET_NUMBER belum dikonfigurasi di .env – notifikasi dilewati');
     return;
