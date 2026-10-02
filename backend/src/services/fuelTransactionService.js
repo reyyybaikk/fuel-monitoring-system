@@ -4,6 +4,22 @@ const fuelAnalysisQueue = require('../config/queue');
 const redisClient = require('../config/redis');
 const { sendWhacenterMessage } = require('../utils/whacenter');
 const regionContactRepo = require('../repositories/regionContactRepository');
+// Fungsi deteksi anomali sederhana berbasis aturan
+function isAnomalySimple(transaction) {
+  // 1. volume BBM tidak boleh <= 0
+  if (Number(transaction.fuel_amount) <= 0) return true;
+  // 2. total cost tidak boleh <= 0
+  if (Number(transaction.total_cost) <= 0) return true;
+  // 3. odometer tidak boleh negatif
+  if (Number(transaction.odometer) < 0) return true;
+  // 4. Jika odometer berkurang dibandingkan nilai sebelumnya (jika tersedia)
+  if (transaction.previous_odometer !== undefined && Number(transaction.odometer) < Number(transaction.previous_odometer)) {
+    return true;
+  }
+  // Tambahkan aturan lain bila diperlukan
+  return false;
+}
+
 class FuelTransactionService {
   async createTransaction(data, userId) {
     const { vehicle_id, filling_source, fuel_type, fuel_amount, odometer, total_cost } = data;
@@ -162,10 +178,22 @@ class FuelTransactionService {
       throw error;
     }
 
-    // Tentukan status akhir berdasarkan keputusan admin
-    const updatedStatus = isAnomaly ? 'REJECTED' : 'APPROVED';
+        // Deteksi anomali otomatis menggunakan aturan sederhana
+    const autoAnomaly = isAnomalySimple(transaction);
+    // Jika admin memberikan flag, gunakan flag admin tetapi periksa kecocokan dengan deteksi otomatis
+    let finalAnomaly;
+    if (typeof isAnomaly === 'boolean') {
+      finalAnomaly = isAnomaly;
+      if (finalAnomaly !== autoAnomaly) {
+        console.warn(`[ML Engine] Deteksi otomatis (${autoAnomaly ? 'anomali' : 'normal'}) tidak cocok dengan input admin (${finalAnomaly ? 'anomali' : 'normal'}).`);
+      }
+    } else {
+      finalAnomaly = autoAnomaly;
+    }
+    // Tentukan status akhir berdasarkan finalAnomaly
+    const updatedStatus = finalAnomaly ? 'REJECTED' : 'APPROVED';
     await fuelTransactionRepository.updateStatus(id, updatedStatus);
-    await fuelTransactionRepository.saveFeedback(id, isAnomaly, notes);
+    await fuelTransactionRepository.saveFeedback(id, finalAnomaly, notes);
 
     // ---------- NOTIFIKASI WHACENTER ----------
     try {

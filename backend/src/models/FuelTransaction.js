@@ -12,6 +12,7 @@ const FuelTransaction = sequelize.define('FuelTransaction', {
     totalCost: { type: DataTypes.FLOAT, allowNull: false },
     photoPath: { type: DataTypes.STRING, allowNull: true },
     isSynced: { type: DataTypes.BOOLEAN, defaultValue: true },
+    isAnomaly: { type: DataTypes.BOOLEAN, defaultValue: false },
     transactionDate: { type: DataTypes.DATE, defaultValue: DataTypes.NOW }
 });
 

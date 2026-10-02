@@ -1,6 +1,7 @@
 const { Worker } = require('bullmq');
 const redisClient = require('../config/redis');
 const db = require('../config/db');
+const axios = require('axios');
 
 console.log('========================================');
 console.log('[Worker] Menjalankan Fuel Analysis Worker...');
@@ -11,10 +12,36 @@ const worker = new Worker('fuel-analysis-queue', async (job) => {
   console.log(`\n[Worker] 🚀 Menerima Job ID: ${job.id}`);
   console.log(`[Worker] Memproses Transaksi BBM ID: ${job.data.transactionId}`);
 
-  // 1. DUMMY PROCESSING (Simulasi proses berat / Machine Learning)
-  console.log('[Worker] Sedang menganalisis data (simulasi 3 detik)...');
-  await new Promise(resolve => setTimeout(resolve, 3000)); // Tahan selama 3 detik
- 
+
+ // 1. Real processing – call ML service for anomaly detection
+console.log('[Worker] Memanggil layanan ML untuk deteksi anomali...');
+const ML_ENGINE_URL = process.env.ML_ENGINE_URL;
+let anomaly = false;
+try {
+  const mlResp = await axios.post(`${ML_ENGINE_URL}/detect`, {
+    transactionId: job.data.transactionId,
+    amount: job.data.amount,
+    fuelType: job.data.fuelType,
+  });
+  anomaly = mlResp.data.anomaly;
+  console.log(`[Worker] Anomali terdeteksi: ${anomaly}`);
+} catch (err) {
+  console.error('[Worker] ❌ Gagal memanggil layanan ML:', err.message);
+}
+
+// 2. SUCCESS HANDLING – perbarui PostgreSQL dengan hasil
+const updateQuery = `
+  UPDATE fuel_transactions
+  SET notes = $1,
+      is_anomaly = $2,
+      updated_at = CURRENT_TIMESTAMP
+  WHERE id = $3
+  RETURNING *;
+`;
+const noteMsg = anomaly ? 'Anomali terdeteksi (ML)' : 'Tidak ada anomali (ML)';
+await db.query(updateQuery, [noteMsg, anomaly, job.data.transactionId]);
+console.log(`[Worker] ✅ Job ${job.id} selesai. PostgreSQL berhasil diupdate (anomaly=${anomaly}).`);
+return { success: true, transactionId: job.data.transactionId, anomaly };
 
   // 2. SUCCESS HANDLING (Memperbarui PostgreSQL)
   try {
