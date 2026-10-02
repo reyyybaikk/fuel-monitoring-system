@@ -2,7 +2,8 @@ const fuelTransactionRepository = require('../repositories/fuelTransactionReposi
 const vehicleRepository = require('../repositories/vehicleRepository');
 const fuelAnalysisQueue = require('../config/queue');
 const redisClient = require('../config/redis');
-
+const { sendWhacenterMessage } = require('../utils/whacenter');
+const regionContactRepo = require('../repositories/regionContactRepository');
 class FuelTransactionService {
   async createTransaction(data, userId) {
     const { vehicle_id, filling_source, fuel_type, fuel_amount, odometer, total_cost } = data;
@@ -161,12 +162,33 @@ class FuelTransactionService {
       throw error;
     }
 
-    // Jika admin setuju itu anomali, status transaksi tetap REJECTED atau sesuaikan
-    // Jika admin menganggap False Positive (bukan anomali), ubah status jadi APPROVED
+    // Tentukan status akhir berdasarkan keputusan admin
     const updatedStatus = isAnomaly ? 'REJECTED' : 'APPROVED';
-
     await fuelTransactionRepository.updateStatus(id, updatedStatus);
-    return await fuelTransactionRepository.saveFeedback(id, isAnomaly, notes);
+    await fuelTransactionRepository.saveFeedback(id, isAnomaly, notes);
+
+    // ---------- NOTIFIKASI WHACENTER ----------
+    try {
+      // Ambil nilai region (bisa `region` atau `ul_nd` pada tabel transaksi)
+      const regionValue = transaction.region || transaction.ul_nd;
+      const adminWhatsapp = await regionContactRepo.getAdminWhatsappByRegion(regionValue);
+      if (adminWhatsapp) {
+        const message = `*Pemberitahuan Anomali*\n` +
+          `Transaksi ID: ${id}\n` +
+          `Kendaraan: ${transaction.vehicle_id}\n` +
+          `Wilayah: ${regionValue}\n` +
+          `Status: ${updatedStatus}\n` +
+          `Catatan admin: ${notes || '-'}\n` +
+          `Silakan tinjau di aplikasi.`;
+        await sendWhacenterMessage(adminWhatsapp, message);
+      } else {
+        console.warn(`[Whacenter] Tidak ada admin_whatsapp untuk region '${regionValue}'.`);
+      }
+    } catch (e) {
+      console.error('[Whacenter] Gagal kirim notifikasi anomali:', e.message);
+    }
+
+    return { id, updatedStatus };
   }
 
   async updateTransactionData(id, data) {
