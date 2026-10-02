@@ -1,7 +1,7 @@
 const { Worker } = require('bullmq');
 const redisClient = require('../config/redis');
 const db = require('../config/db');
-const axios = require('axios');
+
 
 console.log('========================================');
 console.log('[Worker] Menjalankan Fuel Analysis Worker...');
