@@ -9,14 +9,14 @@ const { sendWhacenterMessage } = require('./whacenter');
 const { WHACENTER_TARGET_NUMBER } = process.env;
 
 /**
- * Sends an anomaly alert to the configured WhatsApp number.
+ * Sends an anomaly alert to a specific WhatsApp number (fallback to env var)
  *
  * @param {number} transactionId  ID transaksi yang diproses
  * @param {number} amount        Jumlah bahan bakar / nilai transaksi
  * @param {string} fuelType      Tipe bahan bakar (mis. Solar, Premium)
  * @param {boolean} isAnomaly    Flag apakah anomali terdeteksi
+ * @param {string} targetNumber  (Opsional) Nomor WhatsApp admin wilayah
  */
-// Sends an anomaly alert to a specific WhatsApp number (fallback to env var)
 async function sendAnomalyAlert(transactionId, amount, fuelType, isAnomaly, targetNumber) {
   // Use the provided targetNumber; if missing, fall back to env var
   const number = targetNumber || WHACENTER_TARGET_NUMBER;
@@ -34,23 +34,6 @@ async function sendAnomalyAlert(transactionId, amount, fuelType, isAnomaly, targ
   } catch (err) {
     console.error('[WhatsApp] Gagal mengirim notifikasi:', err.message);
     // Do not re‑throw so the job does not fail because of notification
-  }
-}
-
-  if (!WHACENTER_TARGET_NUMBER) {
-    console.warn('[WhatsApp] WHACENTER_TARGET_NUMBER belum dikonfigurasi di .env – notifikasi dilewati');
-    return;
-  }
-
-  const status = isAnomaly ? '🚨 *ANOMALI TERDETEKSI*' : '✅ *Tidak ada anomali*';
-  const message = `${status}\nTransaction ID: ${transactionId}\nAmount: ${amount}\nFuel Type: ${fuelType}`;
-
-  try {
-    await sendWhacenterMessage(WHACENTER_TARGET_NUMBER, message);
-    console.log('[WhatsApp] Notifikasi terkirim ke', WHACENTER_TARGET_NUMBER);
-  } catch (err) {
-    console.error('[WhatsApp] Gagal mengirim notifikasi:', err.message);
-    // Jangan re‑throw sehingga job tidak gagal karena notifikasi saja.
   }
 }
 
