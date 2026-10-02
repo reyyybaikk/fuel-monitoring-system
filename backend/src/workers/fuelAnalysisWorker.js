@@ -18,11 +18,13 @@ console.log('[Worker] Memanggil layanan ML untuk deteksi anomali...');
 const ML_ENGINE_URL = process.env.ML_ENGINE_URL;
 let anomaly = false;
 try {
-  const mlResp = await axios.post(`${ML_ENGINE_URL}/detect`, {
+const payloadML = {
     transactionId: job.data.transactionId,
     amount: job.data.amount,
     fuelType: job.data.fuelType,
-  });
+  };
+  console.log(`[Worker] Mengirim ke ML Engine:`, payloadML);
+  const mlResp = await axios.post(`${ML_ENGINE_URL}/detect`, payloadML);
   anomaly = mlResp.data.anomaly;
   console.log(`[Worker] Anomali terdeteksi: ${anomaly}`);
 } catch (err) {
