@@ -1,8 +1,8 @@
 const { Worker } = require('bullmq');
 const redisClient = require('../config/redis');
 const db = require('../config/db');
-
-
+const axios = require('axios');
+const { sendAnomalyAlert } = require('../utils/whatsapp');
 console.log('========================================');
 console.log('[Worker] Menjalankan Fuel Analysis Worker...');
 console.log('========================================');
@@ -41,28 +41,22 @@ const updateQuery = `
 const noteMsg = anomaly ? 'Anomali terdeteksi (ML)' : 'Tidak ada anomali (ML)';
 await db.query(updateQuery, [noteMsg, anomaly, job.data.transactionId]);
 console.log(`[Worker] ✅ Job ${job.id} selesai. PostgreSQL berhasil diupdate (anomaly=${anomaly}).`);
-return { success: true, transactionId: job.data.transactionId, anomaly };
-
-  // 2. SUCCESS HANDLING (Memperbarui PostgreSQL)
-  try {
-    const updateQuery = `
-      UPDATE fuel_transactions 
-      SET notes = $1, updated_at = CURRENT_TIMESTAMP 
-      WHERE id = $2
-      RETURNING *;
-    `;
-    // Kita isi notes dengan pesan sukses sementara
-    await db.query(updateQuery, ['Analisis Selesai (Dummy ML)', job.data.transactionId]);
-    console.log(`[Worker] ✅ Job ${job.id} selesai. PostgreSQL berhasil diupdate.`);
-    
-    // Nilai return ini akan disimpan oleh Redis sebagai bukti sukses
-    return { success: true, transactionId: job.data.transactionId };
-
-  } catch (error) {
-    console.error(`[Worker] ❌ Gagal mengupdate PostgreSQL:`, error.message);
-    // PENTING: Lempar error agar BullMQ tahu job ini GAGAL, sehingga mekanisme RETRY bisa aktif
-    throw error; 
+  // Kirim notifikasi WhatsApp bila anomali terdeteksi
+  if (anomaly) {
+    try {
+      await sendAnomalyAlert(job.data.transactionId, job.data.amount, job.data.fuelType, anomaly);
+      console.log('[Worker] 📱 Notifikasi WhatsApp terkirim.');
+    } catch (notifyErr) {
+      console.error('[Worker] ❌ Gagal mengirim notifikasi WhatsApp:', notifyErr.message);
+    }
   }
+
+  return { success: true, transactionId: job.data.transactionId, anomaly };
+
+
+
+
+
 
 }, {
   connection: redisClient,
