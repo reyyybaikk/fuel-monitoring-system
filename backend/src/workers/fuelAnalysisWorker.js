@@ -47,9 +47,11 @@ console.log(`[Worker] ✅ Job ${job.id} selesai. PostgreSQL berhasil diupdate (a
     try {
       const adminRes = await db.query(
         `SELECT rc.admin_whatsapp
-         FROM region_contracts rc
-         JOIN fuel_transactions ft ON rc.id = ft.region_contract_id
-         WHERE ft.id = $1`,
+         FROM fuel_transactions ft
+         JOIN vehicles v ON ft.vehicle_id = v.id
+         JOIN region_contacts rc ON LOWER(rc.ul_nd) = LOWER(v.ul_nd) OR LOWER(rc.ul_pln) = LOWER(v.ul_nd)
+         WHERE ft.id = $1
+         LIMIT 1`,
         [job.data.transactionId]
       );
       if (adminRes.rowCount > 0) adminNumber = adminRes.rows[0].admin_whatsapp;
