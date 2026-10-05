@@ -46,18 +46,56 @@ class FuelTransactionService {
     }
 
     const validFuelTypes = ['Pertalite', 'Pertamax', 'Biosolar', 'Dexlite', 'Pertamina Dex'];
-    const isFuelValid = validFuelTypes.some(type => type.toLowerCase() === fuel_type.toLowerCase());
+    // Normalize input: trim whitespace and case-insensitive
+    const normalizedFuelType = (fuel_type || '').trim().toLowerCase();
+    // Aliases for common variations (e.g., "Pertamax 95") map to standard type
+    const aliasMap = {
+      'pertamax95': 'pertamax',
+      'pertamax98': 'pertamax',
+      'pertamina dex': 'pertamina dex',
+    };
+    const mappedFuel = aliasMap[normalizedFuelType] || normalizedFuelType;
+    const isFuelValid = validFuelTypes.some(type => type.toLowerCase() === mappedFuel);
     if (!isFuelValid) {
       const error = new Error(`Jenis BBM tidak valid. Gunakan: ${validFuelTypes.join(', ')}`);
-      error.statusCode = 400; 
+      error.statusCode = 400;
       throw error;
     }
 
     const vehicle = await vehicleRepository.findById(vehicle_id);
     if (!vehicle || !vehicle.is_active) {
       const error = new Error('Kendaraan tidak ditemukan atau sudah tidak aktif');
-      error.statusCode = 404; 
+      error.statusCode = 404;
       throw error;
+    }
+
+    // Engine‑specific fuel type validation
+    const engineFuelMap = {
+      gasoline: ['pertalite', 'pertamax', 'pertamax turbo'],
+      diesel: ['biosolar', 'dexlite', 'pertamina dex']
+    };
+    // Assume vehicle.fuel_type stores engine type like 'Bensin' or 'Diesel'
+    const engineTypeRaw = (vehicle.fuel_type || '').toLowerCase();
+    const engineKey = engineTypeRaw.includes('bensin') ? 'gasoline' : engineTypeRaw.includes('diesel') ? 'diesel' : null;
+    if (engineKey) {
+      const allowed = engineFuelMap[engineKey];
+      const normalizedFuel = (fuel_type || '').trim().toLowerCase();
+      const isAllowed = allowed.some(f => f === normalizedFuel);
+      if (!isAllowed) {
+        const error = new Error(`Jenis BBM tidak valid untuk tipe mesin ${engineKey}. Gunakan: ${allowed.map(f => f.charAt(0).toUpperCase() + f.slice(1)).join(', ')}`);
+        error.statusCode = 400;
+        throw error;
+      }
+    } else {
+      // Fallback to generic validation if engine type unknown
+      const validFuelTypes = ['Pertalite', 'Pertamax', 'Biosolar', 'Dexlite', 'Pertamina Dex'];
+      const normalizedFuel = (fuel_type || '').trim().toLowerCase();
+      const isFuelValid = validFuelTypes.some(type => type.toLowerCase() === normalizedFuel);
+      if (!isFuelValid) {
+        const error = new Error(`Jenis BBM tidak valid. Gunakan: ${validFuelTypes.join(', ')}`);
+        error.statusCode = 400;
+        throw error;
+      }
     }
 
     if (data.receipt_photo && data.receipt_photo.buffer) {
