@@ -47,6 +47,19 @@ class FuelTransactionController {
 
       const newTransaction = await fuelTransactionService.createTransaction(transactionData, driverId);
 
+      // Panggil ML Engine untuk validasi (fire‑and‑forget)
+      try {
+        const mlUrl = process.env.ML_ENGINE_URL || 'http://ml-engine:8000';
+        const apiKey = process.env.ML_API_KEY;
+        const headers = apiKey ? { 'X-API-KEY': apiKey } : {};
+        const axios = require('axios');
+        axios.get(`${mlUrl}/validate/${newTransaction.id}`, { headers })
+          .then(() => console.log(`ML validation dispatched for transaction ${newTransaction.id}`))
+          .catch(err => console.error(`ML validation error for ${newTransaction.id}: ${err.message}`));
+      } catch (e) {
+        console.error(`Failed to dispatch ML validation: ${e.message}`);
+      }
+
       return res.status(201).json({
         success: true,
         message: 'Fuel transaction created successfully',
