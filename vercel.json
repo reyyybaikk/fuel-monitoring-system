@@ -1,0 +1,32 @@
+{
+  "version": 2,
+  "rewrites": [
+    {
+      "source": "/run-worker",
+      "destination": "ml-engine/api/worker.py"
+    },
+    {
+      "source": "/(.*)",
+      "destination": "ml-engine/api/index.py"
+    }
+  ],
+  "crons": [
+    {
+      "path": "/run-worker",
+      "schedule": "*/1 * * * *"
+    }
+  ],
+  "functions": {
+    "ml-engine/api/index.py": {
+      "runtime": "python3.14"
+    },
+    "ml-engine/api/worker.py": {
+      "runtime": "python3.14"
+    }
+  },
+  "env": {
+    "REDIS_URL": "",
+    "DATABASE_URL": ""
+  },
+  "installCommand": "apt-get update && apt-get install -y tesseract-ocr && pip install -r ml-engine/requirements.txt"
+}
