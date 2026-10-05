@@ -1,13 +1,29 @@
 {
   "version": 2,
-  "rewrites": [
+  "builds": [
     {
-      "source": "/run-worker",
-      "destination": "ml-engine/api/worker.py"
+      "src": "ml-engine/api/index.py",
+      "use": "@vercel/python",
+      "config": {
+        "runtime": "python3.14"
+      }
     },
     {
-      "source": "/(.*)",
-      "destination": "ml-engine/api/index.py"
+      "src": "ml-engine/api/worker.py",
+      "use": "@vercel/python",
+      "config": {
+        "runtime": "python3.14"
+      }
+    }
+  ],
+  "routes": [
+    {
+      "src": "/run-worker",
+      "dest": "ml-engine/api/worker.py"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "ml-engine/api/index.py"
     }
   ],
   "crons": [
@@ -16,14 +32,6 @@
       "schedule": "*/1 * * * *"
     }
   ],
-  "functions": {
-    "ml-engine/api/index.py": {
-      "runtime": "python3.14"
-    },
-    "ml-engine/api/worker.py": {
-      "runtime": "python3.14"
-    }
-  },
   "env": {
     "REDIS_URL": "",
     "DATABASE_URL": ""
