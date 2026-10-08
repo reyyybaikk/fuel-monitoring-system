@@ -22,13 +22,7 @@ async function startServer() {
       console.log(`🚀 Server Fuel Monitoring aktif dan berjalan di port ${PORT}`);
     });
 
-    // Start the BullMQ Worker in the background
-    try {
-      require('./workers/fuelAnalysisWorker');
-      console.log('✅ Fuel Analysis Worker telah dijalankan bersama server.');
-    } catch (workerErr) {
-      console.error('❌ Gagal menjalankan worker:', workerErr.message);
-    }
+    console.log('BullMQ analysis jobs are processed by the ML worker service.');
   } catch (error) {
     console.error('Failed to connect to the database. Server will not start.');
     console.error('Error details:', error.message);
