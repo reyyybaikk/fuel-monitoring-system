@@ -45,13 +45,14 @@ class FuelTransactionService {
       throw error;
     }
 
-    const validFuelTypes = ['Pertalite', 'Pertamax', 'Biosolar', 'Dexlite', 'Pertamina Dex'];
+    const validFuelTypes = ['Pertalite', 'Pertamax', 'Pertamax Turbo', 'Biosolar', 'Dexlite', 'Pertamina Dex'];
     // Normalize input: trim whitespace and case-insensitive
     const normalizedFuelType = (fuel_type || '').trim().toLowerCase();
     // Aliases for common variations (e.g., "Pertamax 95") map to standard type
     const aliasMap = {
       'pertamax95': 'pertamax',
-      'pertamax98': 'pertamax',
+      'pertamax98': 'pertamax turbo',
+      'pertamaxturbo': 'pertamax turbo',
       'pertamina dex': 'pertamina dex',
     };
     const mappedFuel = aliasMap[normalizedFuelType] || normalizedFuelType;
@@ -88,7 +89,7 @@ class FuelTransactionService {
       }
     } else {
       // Fallback to generic validation if engine type unknown
-      const validFuelTypes = ['Pertalite', 'Pertamax', 'Biosolar', 'Dexlite', 'Pertamina Dex'];
+      const validFuelTypes = ['Pertalite', 'Pertamax', 'Pertamax Turbo', 'Biosolar', 'Dexlite', 'Pertamina Dex'];
       const normalizedFuel = (fuel_type || '').trim().toLowerCase();
       const isFuelValid = validFuelTypes.some(type => type.toLowerCase() === normalizedFuel);
       if (!isFuelValid) {

@@ -49,7 +49,7 @@ const runMigration = async () => {
         vehicle_id INTEGER NOT NULL REFERENCES vehicles(id) ON DELETE RESTRICT,
         driver_id INTEGER NOT NULL REFERENCES users(id) ON DELETE RESTRICT,
         filling_source VARCHAR(20) NOT NULL CHECK (filling_source IN ('SPBU', 'ECERAN')),
-        fuel_type VARCHAR(50) NOT NULL CHECK (fuel_type IN ('Pertalite', 'Pertamax', 'Biosolar', 'Dexlite', 'Pertamina Dex')),
+        fuel_type VARCHAR(50) NOT NULL CHECK (fuel_type IN ('Pertalite', 'Pertamax', 'Pertamax Turbo', 'Biosolar', 'Dexlite', 'Pertamina Dex')),
         fuel_amount NUMERIC(10, 2) NOT NULL,
         odometer INTEGER NOT NULL,
         total_cost NUMERIC(12, 2) NOT NULL,
